@@ -10,6 +10,7 @@ find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
 
 target_link_libraries(VulkanTesting glfw Vulkan::Vulkan)
+target_include_directories(VulkanTesting PRIVATE ${CMAKE_SOURCE_DIR}/ThirdParty)
 
 # Shader compilation target
 find_program(GLSLC glslc REQUIRED)
