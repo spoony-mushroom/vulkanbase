@@ -34,5 +34,8 @@
 # Build folders
 build/
 
+# IDE
+.vscode/
+
 # Exceptions
 !resources/*.obj

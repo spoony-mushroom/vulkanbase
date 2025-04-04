@@ -25,6 +25,8 @@
 #include "types.hpp"
 #include "utils.hpp"
 
+#include "vkcore/VulkanContext.hpp"
+
 class HelloTriangleApplication {
  public:
   void run() {
@@ -47,7 +49,7 @@ class HelloTriangleApplication {
   static constexpr char VERT_SHADER_SPV[]{"shaders/triangle_app_vert.spv"};
   static constexpr char FRAG_SHADER_SPV[]{"shaders/triangle_app_frag.spv"};
 
-  const std::vector<const char*> validationLayers{
+  static constexpr std::array validationLayers{
       "VK_LAYER_KHRONOS_validation"};
 
   const std::vector<const char*> deviceExtensions{
@@ -212,7 +214,7 @@ class HelloTriangleApplication {
     glfwSetFramebufferSizeCallback(window, frameBufferResizeCallback);
   }
 
-  bool checkValidationLayerSupport() const {
+  static bool checkValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
     std::vector<VkLayerProperties> layers(layerCount);
@@ -236,13 +238,15 @@ class HelloTriangleApplication {
           "Validation layers requested, but not supported");
     }
 
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    VkApplicationInfo appInfo{
+      .apiVersion = VK_API_VERSION_1_4
+    };
+    // appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    // appInfo.pApplicationName = "Hello Triangle";
+    // appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    // appInfo.pEngineName = "No Engine";
+    // appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    // appInfo.apiVersion = VK_API_VERSION_1_0;
 
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

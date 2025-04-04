@@ -4,7 +4,12 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(VulkanTesting VERSION 1.0 LANGUAGES CXX)
 
-add_executable(VulkanTesting main.cpp)
+set(ENGINE_SOURCES 
+    vkcore/Renderer.cpp
+    vkcore/VulkanContext.cpp 
+    vkcore/VulkanUtils.cpp)
+
+add_executable(VulkanTesting main.cpp ${ENGINE_SOURCES})
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
