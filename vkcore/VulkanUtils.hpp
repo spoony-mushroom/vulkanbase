@@ -32,6 +32,12 @@ namespace spoony::vkcore {
 
 constexpr std::array k_validationLayers{"VK_LAYER_KHRONOS_validation"};
 
+constexpr std::array k_deviceExtensions{VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+#if defined(__APPLE__) && defined(__arm64__)
+                                        "VK_KHR_portability_subset"
+#endif
+};
+
 struct SwapChainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
   std::vector<VkSurfaceFormatKHR> formats;
@@ -45,9 +51,7 @@ struct QueueFamilyIndices {
   bool presentSupported() const { return presentFamily.has_value(); }
   bool graphicsSupported() const { return graphicsFamily.has_value(); }
 
-  bool isComplete() const {
-    return presentSupported && graphicsSupported;
-  }
+  bool isComplete() const { return presentSupported() && graphicsSupported(); }
 };
 
 bool checkLayerSupport(std::string_view layer);
@@ -59,4 +63,10 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device,
                                               VkSurfaceKHR surface);
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device,
                                      VkSurfaceKHR surface);
+
+VkImageView createImageView(VkDevice device,
+                            VkImage image,
+                            VkFormat format,
+                            uint32_t mipLevels,
+                            VkImageAspectFlags aspectFlags);
 }  // namespace spoony::vkcore

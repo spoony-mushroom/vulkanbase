@@ -1,22 +1,27 @@
 #pragma once
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 #include "VulkanContext.hpp"
 
 namespace spoony::vkcore {
-class WindowSurface final {
+
+class WindowSurface;
+
+class Swapchain final {
  public:
-  WindowSurface(ContextHandle context, GLFWwindow* window)
-      : m_context(context) {}
-  ~WindowSurface() {
-    vkDestroySurfaceKHR(m_context.instance(), m_surface, nullptr);
-  }
+  Swapchain(ContextHandle context, const WindowSurface& surface);
+  ~Swapchain();
 
  private:
   ContextHandle m_context;
-  VkSurfaceKHR m_surface;
-};
+  VkSwapchainKHR m_swapChain;
+  std::vector<VkImage> m_images;
+  std::vector<VkImageView> m_imageViews;
+  std::vector<VkFramebuffer> m_framebuffers;
+  VkFormat m_imageFormat;
+  VkExtent2D m_extent;
 
-class Swapchain final {};
+  void createSwapChain(const WindowSurface& surface);
+  void createImageViews();
+  void createFrameBuffers();
+};
 }  // namespace spoony::vkcore

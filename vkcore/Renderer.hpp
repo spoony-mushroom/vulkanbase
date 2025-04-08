@@ -1,14 +1,16 @@
 #pragma once
-#include "VulkanContext.hpp"
 #include "Swapchain.hpp"
+#include "VulkanContext.hpp"
+#include "WindowSurface.hpp"
 
 namespace spoony::vkcore {
 
 class Renderer {
  public:
-  Renderer(ContextHandle context, VkSurfaceKHR surface);
+  Renderer(GLFWwindow* window);
 
  private:
   ContextHandle m_context;
+  WindowSurfaceGLFW m_surface;
 };
 }  // namespace spoony::vkcore

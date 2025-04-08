@@ -1,12 +1,18 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include <functional>
 #include <span>
+
+#include <vulkan/vulkan.h>
 
 namespace spoony::vkcore {
 
 class VulkanContext final {
  public:
+  VulkanContext(std::span<const char*> extensions,
+                std::span<const char*> layers);
   ~VulkanContext();
+  void initialize(VkSurfaceKHR surface);
+
   VkInstance getInstance() { return m_instance; }
   VkDevice getDevice() const { return m_device; }
   VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
@@ -15,8 +21,6 @@ class VulkanContext final {
 
  private:
   friend class VulkanContextBuilder;
-  VulkanContext(std::span<const char*> extensions,
-                std::span<const char*> layers);
 
   VkInstance m_instance{VK_NULL_HANDLE};
   VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
@@ -27,16 +31,17 @@ class VulkanContext final {
 
   void createInstance(std::span<const char*> extensions,
                       std::span<const char*> layers);
-  void initialize(VkSurfaceKHR surface);
+
   void pickPhysicalDevice(VkSurfaceKHR surface);
-  void createLogicalDevice();
+  void createLogicalDevice(VkSurfaceKHR surface);
 };
 
 class ContextHandle {
  public:
-  explicit ContextHandle(std::shared_ptr<VulkanContext> contextPtr)
+  ContextHandle(std::shared_ptr<VulkanContext> contextPtr)
       : m_context(contextPtr) {}
 
+  void initialize(VkSurfaceKHR surface) { m_context->initialize(surface); }
   VkInstance instance() const { return m_context->getInstance(); }
   VkDevice device() const { return m_context->getDevice(); }
   VkPhysicalDevice physicalDevice() const {
@@ -53,7 +58,6 @@ class VulkanContextBuilder final {
   VulkanContextBuilder& addExtension(std::string_view extension);
   VulkanContextBuilder& addLayer(std::string_view layer);
   VulkanContextBuilder& setEnableValidation(bool enabled);
-  VulkanContextBuilder& setSurface(VkSurfaceKHR surface);
 
   ContextHandle build() const;
 
@@ -61,6 +65,5 @@ class VulkanContextBuilder final {
   std::vector<std::string> m_extensions;
   std::vector<std::string> m_layers;
   bool m_enableValidationLayers{false};
-  VkSurfaceKHR m_surface{VK_NULL_HANDLE};
 };
 }  // namespace spoony::vkcore

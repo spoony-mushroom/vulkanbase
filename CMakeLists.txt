@@ -6,10 +6,12 @@ project(VulkanTesting VERSION 1.0 LANGUAGES CXX)
 
 set(ENGINE_SOURCES 
     vkcore/Renderer.cpp
+    vkcore/Swapchain.cpp
     vkcore/VulkanContext.cpp 
-    vkcore/VulkanUtils.cpp)
+    vkcore/VulkanUtils.cpp
+    vkcore/WindowSurface.cpp)
 
-add_executable(VulkanTesting main.cpp ${ENGINE_SOURCES})
+add_executable(VulkanTesting main.cpp testApp.cpp ${ENGINE_SOURCES})
 
 find_package(Vulkan REQUIRED)
 find_package(glfw3 REQUIRED)
