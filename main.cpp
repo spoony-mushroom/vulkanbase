@@ -1514,25 +1514,11 @@ class HelloTriangleApplication {
     assemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     assemblyInfo.primitiveRestartEnable = VK_FALSE;
 
-    VkViewport viewport{};
-    viewport.width = (float)swapChainExtent.width;
-    viewport.height = (float)swapChainExtent.height;
-    viewport.x = 0.f;
-    viewport.y = 0.f;
-    viewport.minDepth = 0.f;
-    viewport.maxDepth = 1.f;
-
-    VkRect2D scissor;
-    scissor.extent = swapChainExtent;
-    scissor.offset = {0, 0};
-
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     // actually viewport and scissor will be set up later (dynamic)
     viewportState.scissorCount = 1;
     viewportState.viewportCount = 1;
-    // viewportState.pViewports = &viewport;
-    // viewportState.pScissors = &scissor;
 
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType =

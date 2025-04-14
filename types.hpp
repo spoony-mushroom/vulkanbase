@@ -45,7 +45,7 @@ struct Vertex {
     bool operator==(const Vertex& other) const = default;
 };
 
-void hash_combine(size_t& seed) {};
+static void hash_combine(size_t& seed) {};
 
 template<typename T, typename... Rest>
 inline void hash_combine(size_t& seed, const T& v, const Rest&... rest) {

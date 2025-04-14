@@ -1,5 +1,6 @@
 #include "VulkanUtils.hpp"
 
+#include <array>
 #include <set>
 #include <unordered_set>
 
@@ -167,5 +168,54 @@ VkImageView createImageView(VkDevice device,
   }
 
   return imageView;
+}
+
+VkFormat findSupportedCandidates(std::span<VkFormat const> candidates,
+                                 VkPhysicalDevice physicalDevice,
+                                 VkImageTiling tiling,
+                                 VkFormatFeatureFlags features) {
+  for (auto format : candidates) {
+    VkFormatProperties props;
+    vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+    if (tiling == VK_IMAGE_TILING_LINEAR &&
+        hasFlags(props.linearTilingFeatures, features)) {
+      return format;
+    } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
+               hasFlags(props.optimalTilingFeatures, features)) {
+      return format;
+    }
+  }
+
+  throw std::runtime_error("failed to find supported format");
+}
+
+VkFormat findDepthFormat(VkPhysicalDevice physicalDevice) {
+  return findSupportedCandidates(
+      std::array{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+                 VK_FORMAT_D24_UNORM_S8_UINT},
+      physicalDevice, VK_IMAGE_TILING_OPTIMAL,
+      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice) {
+  VkPhysicalDeviceProperties deviceProperties;
+  vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+  // need to check both color and depth sample maximums
+  VkSampleCountFlags counts =
+      deviceProperties.limits.framebufferColorSampleCounts &
+      deviceProperties.limits.framebufferDepthSampleCounts;
+
+  for (int bits = 64; bits >= 1; bits /= 2) {
+    if (hasFlags(counts, bits)) {
+      return static_cast<VkSampleCountFlagBits>(bits);
+    }
+  }
+
+  return VK_SAMPLE_COUNT_1_BIT;
+}
+
+constexpr bool hasStencilComponent(VkFormat format) {
+  return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+         format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 }  // namespace spoony::vkcore

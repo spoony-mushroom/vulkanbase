@@ -11,17 +11,19 @@ class Swapchain final {
   Swapchain(ContextHandle context, const WindowSurface& surface);
   ~Swapchain();
 
+  VkFormat getFormat() const { return m_imageFormat; }
+  VkExtent2D getExtent() const { return m_extent; }
+  std::span<VkImageView const> getImageViews() const { return m_imageViews; }
+
  private:
   ContextHandle m_context;
   VkSwapchainKHR m_swapChain;
   std::vector<VkImage> m_images;
   std::vector<VkImageView> m_imageViews;
-  std::vector<VkFramebuffer> m_framebuffers;
   VkFormat m_imageFormat;
   VkExtent2D m_extent;
 
   void createSwapChain(const WindowSurface& surface);
   void createImageViews();
-  void createFrameBuffers();
 };
 }  // namespace spoony::vkcore

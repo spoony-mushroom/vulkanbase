@@ -1,11 +1,19 @@
 #pragma once
 
 #include <concepts>
+#include <span>
 #include <string_view>
 #include <type_traits>
 #include <vector>
 
 #include <vulkan/vulkan.h>
+
+#define VK_CHECK(result, msg)                             \
+  do {                                                    \
+    if ((result) != VK_SUCCESS) {                         \
+      throw std::runtime_error("Operation failed: " msg); \
+    }                                                     \
+  } while (0)
 
 namespace spoony::utils {
 template <typename T>
@@ -69,4 +77,10 @@ VkImageView createImageView(VkDevice device,
                             VkFormat format,
                             uint32_t mipLevels,
                             VkImageAspectFlags aspectFlags);
+VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice);
+VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
+VkFormat findSupportedCandidates(std::span<VkFormat const> candidates,
+                                 VkPhysicalDevice physicalDevice,
+                                 VkImageTiling tiling,
+                                 VkFormatFeatureFlags features);
 }  // namespace spoony::vkcore

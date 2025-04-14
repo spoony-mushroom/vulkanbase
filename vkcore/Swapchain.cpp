@@ -134,25 +134,4 @@ void Swapchain::createImageViews() {
   }
 }
 
-void Swapchain::createFrameBuffers() {
-  m_framebuffers.resize(m_imageViews.size());
-
-//   for (size_t i = 0; i < m_framebuffers.size(); ++i) {
-//     std::array attachments{colorImageView, depthImageView, m_imageViews[i]};
-
-//     VkFramebufferCreateInfo framebufferInfo{};
-//     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-//     framebufferInfo.attachmentCount = attachments.size();
-//     framebufferInfo.pAttachments = attachments.data();
-//     framebufferInfo.renderPass = renderPass;
-//     framebufferInfo.width = swapChainExtent.width;
-//     framebufferInfo.height = swapChainExtent.height;
-//     framebufferInfo.layers = 1;  // single images
-
-//     if (vkCreateFramebuffer(device, &framebufferInfo, nullptr,
-//                             &m_framebuffers[i]) != VK_SUCCESS) {
-//       throw std::runtime_error("failed to create framebuffer");
-//     }
-//   }
-}
 }  // namespace spoony::vkcore

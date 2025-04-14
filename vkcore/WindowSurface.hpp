@@ -1,6 +1,4 @@
 #pragma once
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 #include "VulkanContext.hpp"
@@ -23,14 +21,13 @@ class WindowSurface {
   ContextHandle m_context;
 };
 
-// TODO: move GLFW-specific stuff to another folder
-class WindowSurfaceGLFW : public WindowSurface {
+template <typename T>
+class WindowSurfaceImpl : public WindowSurface {
  public:
-  WindowSurfaceGLFW(ContextHandle context, GLFWwindow* window);
-
+  WindowSurfaceImpl(ContextHandle context, T* window);
   glm::ivec2 getSize() const override;
 
  private:
-  GLFWwindow* m_window;
+  T* m_window;
 };
 }  // namespace spoony::vkcore

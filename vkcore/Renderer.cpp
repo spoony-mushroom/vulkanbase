@@ -1,4 +1,6 @@
 #include "Renderer.hpp"
+#include "Pipeline.hpp"
+#include "VulkanUtils.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -22,8 +24,31 @@ static ContextHandle makeContext() {
   return contextBuilder.build();
 }
 
-Renderer::Renderer(GLFWwindow* window)
-    : m_context(makeContext()), m_surface(m_context, window) {
-  m_context.initialize(m_surface);
+Renderer::Renderer() : m_context(makeContext()) {};
+
+template <>
+Renderer::Renderer(GLFWwindow* window) : Renderer() {
+  m_surface =
+      std::make_unique<WindowSurfaceImpl<GLFWwindow>>(m_context, window);
+  init();
+}
+
+void Renderer::init() {
+  m_context.initialize(*m_surface);
+  m_swapChain = std::make_unique<Swapchain>(m_context, *m_surface);
+
+  const RenderPassConfig renderPassConfig{
+      .colorImageFormat = m_swapChain->getFormat(),
+      .depthStencilImageFormat = findDepthFormat(m_context.physicalDevice()),
+      .msaaSamples = getMaxUsableSampleCount(m_context.physicalDevice()),
+  };
+
+  m_renderPass = std::make_shared<RenderPass>(m_context, renderPassConfig);
+
+  PipelineBuilder pipelineBuilder(m_context, m_renderPass);
+  pipelineBuilder.setMaxFramesInFlight(2)
+      .setVertexType<Vertex>()
+      .addVertShaderUniform<UniformBufferObject>(0)
+      .addTextureSampler(1);
 }
 }  // namespace spoony::vkcore

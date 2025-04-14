@@ -18,6 +18,7 @@ class VulkanContext final {
   VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
 
   VkSampleCountFlagBits getMaxSampleCount() const;
+  const void deviceWaitIdle() const { vkDeviceWaitIdle(m_device); };
 
  private:
   friend class VulkanContextBuilder;
@@ -38,6 +39,7 @@ class VulkanContext final {
 
 class ContextHandle {
  public:
+  ContextHandle() = default;
   ContextHandle(std::shared_ptr<VulkanContext> contextPtr)
       : m_context(contextPtr) {}
 
