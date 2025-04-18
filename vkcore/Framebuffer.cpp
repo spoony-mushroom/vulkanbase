@@ -19,13 +19,12 @@ Framebuffer::Framebuffer(ContextHandle context,
       .layers = 1,  // single images
   };
 
-  if (vkCreateFramebuffer(m_context.device(), &framebufferInfo, nullptr,
-                          &m_framebuffer) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create framebuffer");
-  }
+  VK_CHECK(vkCreateFramebuffer(m_context.device(), &framebufferInfo, nullptr,
+                               &m_framebuffer),
+           "create framebuffer");
 }
 
 Framebuffer::~Framebuffer() {
-    vkDestroyFramebuffer(m_context.device(), m_framebuffer, nullptr);
+  vkDestroyFramebuffer(m_context.device(), m_framebuffer, nullptr);
 }
 }  // namespace spoony::vkcore

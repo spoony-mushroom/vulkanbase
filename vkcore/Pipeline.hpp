@@ -10,18 +10,19 @@
 
 namespace spoony::vkcore {
 
-struct PipelineConfig {
-  uint32_t width;
-  uint32_t height;
-  uint32_t maxFramesInFlight;
-};
-
 class Pipeline {
  public:
   Pipeline(ContextHandle context,
            std::shared_ptr<RenderPass> renderPass,
            int maxFramesInFlight);
   ~Pipeline();
+  void bind(VkCommandBuffer cmdBuf) const;
+  void bindUniforms(VkCommandBuffer cmdBuf) const;
+
+  template<typename T>
+  void updateUniform(uint32_t bindingIdx, T&& data) {
+    m_uniformBuffers[bindingIdx].data<T>() = data;
+  }
 
  private:
   const uint32_t k_maxFramesInFlight;
@@ -32,19 +33,20 @@ class Pipeline {
   VkDescriptorSetLayout m_descriptorSetLayout;
   VkDescriptorPool m_descriptorPool;
   std::vector<VkDescriptorSet> m_descriptorSets;
-  std::vector<MappedUniformBuffer> m_uniformBuffers;
+  std::map<uint32_t, MappedUniformBuffer> m_uniformBuffers;
 
   std::shared_ptr<RenderPass> m_renderPass;
 
   void createDescriptorSetLayout(
       std::span<const VkDescriptorSetLayoutBinding> bindings);
+  void createUniformBuffer(uint32_t binding, size_t size);
   void createDescriptorPool();
   void createDescriptorSets();
   void initialize(
       VkVertexInputBindingDescription vertexBindingDescription,
       std::span<VkVertexInputAttributeDescription const>
           vertexAttributeDescriptions,
-      std::span<VkPipelineShaderStageCreateInfo const> shaderStages);
+      std::span<VkPipelineShaderStageCreateInfo const> shaderStages);    
 
   friend class PipelineBuilder;
 };
@@ -87,7 +89,7 @@ class PipelineBuilder {
 
   bool validate() const { return true; }  // TODO
 
-  std::unique_ptr<Pipeline> create();
+  std::unique_ptr<Pipeline> create() const;
 
  private:
   int m_maxFramesInFlight{2};
@@ -100,6 +102,5 @@ class PipelineBuilder {
   std::vector<VkVertexInputAttributeDescription> m_vertexAttributeDescriptions;
   std::map<uint32_t, VkDescriptorSetLayoutBinding> m_descriptorLayoutBindings;
   std::map<uint32_t, size_t> m_uniformSizes;
-  VkViewport m_viewPort;
 };
 }  // namespace spoony::vkcore

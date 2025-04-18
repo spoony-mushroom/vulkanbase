@@ -4,9 +4,11 @@
 #include <set>
 #include <unordered_set>
 
+#include "Utils.hpp"
+
 using namespace spoony::utils;
 
-namespace spoony::vkcore {
+namespace spoony::vkcore::utils {
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device,
                                      VkSurfaceKHR surface) {
@@ -86,10 +88,11 @@ bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
   bool needsToPresent = surface != VK_NULL_HANDLE;
   bool swapChainAdequate = false;
 
-  if (extensionsSupported && needsToPresent) {
+  if (extensionsSupported) {
     auto swapChainSupport = querySwapChainSupport(device, surface);
-    swapChainAdequate = !(swapChainSupport.formats.empty() ||
-                          swapChainSupport.presentModes.empty());
+    swapChainAdequate = !swapChainSupport.formats.empty();
+    if (needsToPresent)
+      swapChainAdequate &= !swapChainSupport.presentModes.empty();
   }
 
   VkPhysicalDeviceFeatures supportedFeatures{};
@@ -189,6 +192,22 @@ VkFormat findSupportedCandidates(std::span<VkFormat const> candidates,
   throw std::runtime_error("failed to find supported format");
 }
 
+uint32_t findMemoryType(VkPhysicalDevice physicalDevice,
+                        uint32_t typeFilter,
+                        VkMemoryPropertyFlags properties) {
+  VkPhysicalDeviceMemoryProperties memProperties;
+  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    if (hasBit(typeFilter, i) &&
+        hasFlags(memProperties.memoryTypes[i].propertyFlags, properties)) {
+      // found it
+      return i;
+    }
+  }
+
+  throw std::runtime_error("unable to find suitable memory type");
+}
+
 VkFormat findDepthFormat(VkPhysicalDevice physicalDevice) {
   return findSupportedCandidates(
       std::array{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
@@ -218,4 +237,4 @@ constexpr bool hasStencilComponent(VkFormat format) {
   return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
          format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
-}  // namespace spoony::vkcore
+}  // namespace spoony::vkcore::utils

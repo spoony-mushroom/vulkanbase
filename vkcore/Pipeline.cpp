@@ -28,6 +28,7 @@ void Pipeline::initialize(
     std::span<VkVertexInputAttributeDescription const>
         vertexAttributeDescriptions,
     std::span<VkPipelineShaderStageCreateInfo const> shaderStages) {
+  assert(!shaderStages.empty());
   std::array dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
   VkPipelineDynamicStateCreateInfo dynamicState{
@@ -112,6 +113,12 @@ void Pipeline::initialize(
       .layout = m_pipelineLayout,
       .renderPass = *m_renderPass,
       .subpass = 0};
+
+  VK_CHECK(vkCreateGraphicsPipelines(m_context.device(),
+                                     VK_NULL_HANDLE,  // pipelineCache
+                                     1,               // createInfoCount
+                                     &pipelineInfo, nullptr, &m_pipeline),
+           "create graphics pipeline");
 }
 
 void Pipeline::createDescriptorSetLayout(
@@ -133,6 +140,12 @@ void Pipeline::createDescriptorSetLayout(
   VK_CHECK(vkCreatePipelineLayout(m_context.device(), &pipelineLayoutInfo,
                                   nullptr, &m_pipelineLayout),
            "create pipeline layout");
+}
+
+void Pipeline::createUniformBuffer(uint32_t binding, size_t size) {
+  m_uniformBuffers.emplace(std::piecewise_construct,
+                           std::forward_as_tuple(binding),
+                           std::forward_as_tuple(m_context, size));
 }
 
 void Pipeline::createDescriptorPool() {
@@ -212,7 +225,7 @@ PipelineBuilder& PipelineBuilder::addTextureSampler(uint32_t bindingIndex) {
   return *this;
 }
 
-std::unique_ptr<Pipeline> PipelineBuilder::create() {
+std::unique_ptr<Pipeline> PipelineBuilder::create() const {
   assert(m_renderPass != nullptr);
   auto pipeline =
       std::make_unique<Pipeline>(m_context, m_renderPass, m_maxFramesInFlight);
@@ -226,6 +239,9 @@ std::unique_ptr<Pipeline> PipelineBuilder::create() {
   pipeline->createDescriptorSets();
   pipeline->initialize(m_vertexBindingDescription,
                        m_vertexAttributeDescriptions, m_shaderStages);
+  for (auto [binding, size] : m_uniformSizes) {
+    pipeline->createUniformBuffer(binding, size);
+  }
 
   return pipeline;
 }

@@ -25,8 +25,6 @@
 #include "types.hpp"
 #include "utils.hpp"
 
-#include "vkcore/VulkanContext.hpp"
-
 class HelloTriangleApplication {
  public:
   void run() {
@@ -1048,8 +1046,8 @@ class HelloTriangleApplication {
     depthImageView =
         createImageView(depthImage, depthFormat, 1, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-    transitionImageLayout(depthImage, depthFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    // transitionImageLayout(depthImage, depthFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED,
+    //                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
   }
 
   VkFormat findSupportedCandidates(std::span<VkFormat const> candidates,

@@ -1,7 +1,11 @@
 #include "Buffer.hpp"
 
+#include "Utils.hpp"
 #include "VulkanUtils.hpp"
+
 namespace spoony::vkcore {
+
+using namespace spoony::utils;
 
 static uint32_t findMemoryType(VkPhysicalDevice physicalDevice,
                                uint32_t typeFilter,
@@ -9,9 +13,8 @@ static uint32_t findMemoryType(VkPhysicalDevice physicalDevice,
   VkPhysicalDeviceMemoryProperties memProperties;
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
   for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-    if (utils::hasBit(typeFilter, i) &&
-        utils::hasFlags(memProperties.memoryTypes[i].propertyFlags,
-                        properties)) {
+    if (hasBit(typeFilter, i) &&
+        hasFlags(memProperties.memoryTypes[i].propertyFlags, properties)) {
       // found it
       return i;
     }

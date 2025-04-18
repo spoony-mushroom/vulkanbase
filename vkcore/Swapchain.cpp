@@ -5,6 +5,7 @@
 #include "WindowSurface.hpp"
 
 namespace spoony::vkcore {
+using namespace utils;
 
 static VkSurfaceFormatKHR chooseSwapSurfaceFormat(
     std::span<VkSurfaceFormatKHR const> formats) {

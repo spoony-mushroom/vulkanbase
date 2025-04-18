@@ -1,9 +1,7 @@
 #pragma once
 
-#include <concepts>
 #include <span>
 #include <string_view>
-#include <type_traits>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -15,27 +13,6 @@
     }                                                     \
   } while (0)
 
-namespace spoony::utils {
-template <typename T>
-concept Enum = std::is_enum_v<T>;
-
-inline constexpr bool hasFlags(std::integral auto value,
-                               std::integral auto flagsToCheck) {
-  return (value & flagsToCheck) == flagsToCheck;
-}
-
-template <std::integral T, Enum E>
-inline constexpr bool hasFlags(T value, E flagsToCheck) {
-  auto flagsValue = static_cast<std::underlying_type_t<E>>(flagsToCheck);
-  return (value & flagsValue) == flagsValue;
-}
-
-inline constexpr bool hasBit(std::convertible_to<size_t> auto value,
-                             std::integral auto index) {
-  return value & (1 << index);
-}
-}  // namespace spoony::utils
-
 namespace spoony::vkcore {
 
 constexpr std::array k_validationLayers{"VK_LAYER_KHRONOS_validation"};
@@ -45,6 +22,8 @@ constexpr std::array k_deviceExtensions{VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                                         "VK_KHR_portability_subset"
 #endif
 };
+
+namespace utils {
 
 struct SwapChainSupportDetails {
   VkSurfaceCapabilitiesKHR capabilities;
@@ -83,4 +62,8 @@ VkFormat findSupportedCandidates(std::span<VkFormat const> candidates,
                                  VkPhysicalDevice physicalDevice,
                                  VkImageTiling tiling,
                                  VkFormatFeatureFlags features);
+uint32_t findMemoryType(VkPhysicalDevice physicalDevice,
+                        uint32_t typeFilter,
+                        VkMemoryPropertyFlags properties);
+}  // namespace utils
 }  // namespace spoony::vkcore

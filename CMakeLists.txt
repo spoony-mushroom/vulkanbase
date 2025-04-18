@@ -6,12 +6,15 @@ project(VulkanTesting VERSION 1.0 LANGUAGES CXX)
 
 set(ENGINE_SOURCES 
     vkcore/Buffer.cpp
+    vkcore/CommandBuffer.cpp
     vkcore/Framebuffer.cpp
     vkcore/Pipeline.cpp
-    vkcore/Renderer.cpp
+    vkcore/Renderer.cpp    
     vkcore/RenderPass.cpp
     vkcore/Shader.cpp
     vkcore/Swapchain.cpp
+    vkcore/Synchronization.cpp
+    vkcore/Texture.cpp
     vkcore/VulkanContext.cpp 
     vkcore/VulkanUtils.cpp
     vkcore/WindowSurface.cpp)
