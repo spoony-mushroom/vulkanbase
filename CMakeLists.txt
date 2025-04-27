@@ -9,12 +9,14 @@ set(ENGINE_SOURCES
     vkcore/CommandBuffer.cpp
     vkcore/Framebuffer.cpp
     vkcore/Pipeline.cpp
-    vkcore/Renderer.cpp    
+    vkcore/Renderer.cpp
     vkcore/RenderPass.cpp
+    vkcore/RenderPassModule.cpp
     vkcore/Shader.cpp
     vkcore/Swapchain.cpp
     vkcore/Synchronization.cpp
     vkcore/Texture.cpp
+    vkcore/UnlitRenderPass.cpp
     vkcore/VulkanContext.cpp 
     vkcore/VulkanUtils.cpp
     vkcore/WindowSurface.cpp)

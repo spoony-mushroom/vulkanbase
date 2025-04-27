@@ -13,13 +13,13 @@ namespace spoony::vkcore {
 class Pipeline {
  public:
   Pipeline(ContextHandle context,
-           std::shared_ptr<RenderPass> renderPass,
+           //  std::shared_ptr<RenderPass> renderPass,
            int maxFramesInFlight);
   ~Pipeline();
   void bind(VkCommandBuffer cmdBuf) const;
   void bindUniforms(VkCommandBuffer cmdBuf) const;
 
-  template<typename T>
+  template <typename T>
   void updateUniform(uint32_t bindingIdx, T&& data) {
     m_uniformBuffers[bindingIdx].data<T>() = data;
   }
@@ -35,7 +35,7 @@ class Pipeline {
   std::vector<VkDescriptorSet> m_descriptorSets;
   std::map<uint32_t, MappedUniformBuffer> m_uniformBuffers;
 
-  std::shared_ptr<RenderPass> m_renderPass;
+  // std::shared_ptr<RenderPass> m_renderPass;
 
   void createDescriptorSetLayout(
       std::span<const VkDescriptorSetLayoutBinding> bindings);
@@ -43,17 +43,20 @@ class Pipeline {
   void createDescriptorPool();
   void createDescriptorSets();
   void initialize(
+      const RenderPass& renderPass,
       VkVertexInputBindingDescription vertexBindingDescription,
       std::span<VkVertexInputAttributeDescription const>
           vertexAttributeDescriptions,
-      std::span<VkPipelineShaderStageCreateInfo const> shaderStages);    
+      std::span<VkPipelineShaderStageCreateInfo const> shaderStages);
 
   friend class PipelineBuilder;
 };
 
 class PipelineBuilder {
  public:
-  PipelineBuilder(ContextHandle context, std::shared_ptr<RenderPass> renderPass);
+  // PipelineBuilder(ContextHandle context, std::shared_ptr<RenderPass>
+  // renderPass);
+  PipelineBuilder(ContextHandle context, const RenderPass& renderPass);
 
   PipelineBuilder& setMaxFramesInFlight(int maxFramesInFlight) {
     m_maxFramesInFlight = maxFramesInFlight;
@@ -94,7 +97,8 @@ class PipelineBuilder {
  private:
   int m_maxFramesInFlight{2};
   ContextHandle m_context;
-  std::shared_ptr<RenderPass> m_renderPass;
+  // std::shared_ptr<RenderPass> m_renderPass;
+  const RenderPass& m_renderPass;
   std::unique_ptr<Shader> m_vertShader;
   std::unique_ptr<Shader> m_fragShader;
   std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;

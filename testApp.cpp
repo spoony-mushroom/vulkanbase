@@ -26,12 +26,12 @@ class TestApp {
     // glfwSetFramebufferSizeCallback(m_window, frameBufferResizeCallback);
   };
 
-  void initGraphics() { m_Renderer = std::make_unique<vkcore::Renderer>(m_window); }
+  void initGraphics() { m_renderer = std::make_unique<vkcore::Renderer>(m_window); }
 
   void mainLoop() {
     while (!glfwWindowShouldClose(m_window)) {
       glfwPollEvents();
-    //   drawFrame();
+      m_renderer->drawFrame();
     }
 
     // vkDeviceWaitIdle(device);
@@ -42,7 +42,7 @@ class TestApp {
   const uint32_t HEIGHT = 600;
 
   GLFWwindow* m_window;
-  std::unique_ptr<vkcore::Renderer> m_Renderer;
+  std::unique_ptr<vkcore::Renderer> m_renderer;
 
   static void frameBufferResizeCallback(GLFWwindow* window,
                                         int width,

@@ -11,7 +11,7 @@
 
 namespace spoony::vkcore {
 
-class VulkanContext final : public std::enable_shared_from_this<VulkanContext> {
+class VulkanContext final {
  public:
   VulkanContext(std::span<const char*> extensions,
                 std::span<const char*> layers);
@@ -21,30 +21,27 @@ class VulkanContext final : public std::enable_shared_from_this<VulkanContext> {
   VkInstance getInstance() { return m_instance; }
   VkDevice getDevice() const { return m_device; }
   VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
+  VkQueue getGraphicsQueue() const { return m_graphicsQueue; }
+  VkQueue getPresentQueue() const { return m_presentQueue; }
 
   VkSampleCountFlagBits getMaxSampleCount() const;
-  const void deviceWaitIdle() const { vkDeviceWaitIdle(m_device); };
-  std::unique_ptr<class CommandBuffer> createCommandBuffer();
+  void deviceWaitIdle() const { vkDeviceWaitIdle(m_device); };
 
  private:
   friend class VulkanContextBuilder;
-  friend class CommandBuffer;
 
   VkInstance m_instance{VK_NULL_HANDLE};
   VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
   VkDevice m_device{VK_NULL_HANDLE};
 
-  utils::QueueFamilyIndices m_queueFamilyIndices;
   VkQueue m_graphicsQueue;
   VkQueue m_presentQueue;
-  std::map<std::thread::id, VkCommandPool> m_commandPools;
 
   void createInstance(std::span<const char*> extensions,
                       std::span<const char*> layers);
 
   void pickPhysicalDevice(VkSurfaceKHR surface);
   void createLogicalDevice(VkSurfaceKHR surface);
-  VkCommandPool getOrCreateCommandPool(std::thread::id id);
 };
 
 class ContextHandle {
@@ -61,7 +58,7 @@ class ContextHandle {
     return m_context->getPhysicalDevice();
   }
   std::shared_ptr<VulkanContext> get() const { return m_context; }
-  
+
   bool operator==(std::nullptr_t) const noexcept {
     return m_context == nullptr;
   }

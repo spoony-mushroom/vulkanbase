@@ -11,14 +11,17 @@ Fence::Fence(ContextHandle context) : m_context(context) {
            "create fence");
 }
 
-// Fence::Fence(Fence&& other) noexcept
-//     : m_context(std::move(other.m_context)), m_fence(other.m_fence) {
-//   other.m_fence = VK_NULL_HANDLE;
-// }
-
 Fence::~Fence() {
   if (m_context != nullptr)
     vkDestroyFence(m_context.device(), m_fence, nullptr);
+}
+
+void Fence::reset() const {
+  vkResetFences(m_context.device(), 1, &m_fence);
+}
+
+void Fence::wait(uint64_t timeout) const {
+  vkWaitForFences(m_context.device(), 1, &m_fence, VK_TRUE, timeout);
 }
 
 Semaphore::Semaphore(ContextHandle context) : m_context(context) {

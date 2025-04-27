@@ -14,6 +14,7 @@ class Swapchain final {
   VkFormat getFormat() const { return m_imageFormat; }
   VkExtent2D getExtent() const { return m_extent; }
   std::span<VkImageView const> getImageViews() const { return m_imageViews; }
+  operator VkSwapchainKHR() const { return m_swapChain; }
 
  private:
   ContextHandle m_context;

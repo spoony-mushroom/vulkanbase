@@ -1,20 +1,53 @@
 #include "CommandBuffer.hpp"
 
 namespace spoony::vkcore {
-CommandBuffer::CommandBuffer(ContextHandle context) : m_context(context) {
-  m_pool = m_context.get()->getOrCreateCommandPool(std::this_thread::get_id());
-  VkCommandBufferAllocateInfo allocInfo{
-      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-      .commandPool = m_pool,
-      .commandBufferCount = 1,
-      .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY};
+CommandPool::CommandPool(ContextHandle context, uint32_t queue)
+    : m_context(context) {
+  VkCommandPoolCreateInfo poolInfo{
+      .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+      .queueFamilyIndex = queue};
 
-  VK_CHECK(
-      vkAllocateCommandBuffers(context.device(), &allocInfo, &m_commandBuffer),
-      "allocate command buffer");
+  VkCommandPool commandPool;
+  VK_CHECK(vkCreateCommandPool(context.device(), &poolInfo, nullptr, &m_pool),
+           "create command pool");
+}
+
+CommandPool::~CommandPool() {
+  vkDestroyCommandPool(m_context.device(), m_pool, nullptr);
+}
+
+CommandBuffer CommandPool::acquire(bool reset) {
+  VkCommandBuffer cmdBuf{VK_NULL_HANDLE};
+  if (m_availableBuffers.empty()) {
+    VkCommandBufferAllocateInfo allocInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = m_pool,
+        .commandBufferCount = 1,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY};
+
+    VK_CHECK(vkAllocateCommandBuffers(m_context.device(), &allocInfo, &cmdBuf),
+             "allocate command buffer");
+  } else {
+    cmdBuf = m_availableBuffers.back();
+    m_availableBuffers.pop_back();
+    if (reset) {
+        vkResetCommandBuffer(cmdBuf, 0);
+    }
+  }
+  return {cmdBuf, shared_from_this()};
+}
+
+void CommandPool::recycle(VkCommandBuffer cmdBuf) {
+  m_availableBuffers.push_back(cmdBuf);
 }
 
 CommandBuffer::~CommandBuffer() {
-    vkFreeCommandBuffers(m_context.device(), m_pool, 1, &m_commandBuffer);
+  if (m_commandBuffer != VK_NULL_HANDLE) {
+    return;
+  }
+  if (auto pool = m_pool.lock()) {
+    pool->recycle(m_commandBuffer);
+  }
 }
 }  // namespace spoony::vkcore

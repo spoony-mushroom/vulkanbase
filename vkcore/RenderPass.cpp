@@ -4,13 +4,12 @@
 
 namespace spoony::vkcore {
 spoony::vkcore::RenderPass::RenderPass(ContextHandle context,
-                                       const RenderPassConfig& config)
-    : m_context(context) {
-  m_sampleCount = config.msaaSamples;
+                                       RenderPassConfig config)
+    : m_context(context), m_config(config) {
   // Attachment 0: color
   VkAttachmentDescription colorAttachment{
-      .format = config.colorImageFormat,
-      .samples = config.msaaSamples,
+      .format = m_config.colorImageFormat,
+      .samples = m_config.msaaSamples,
       .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
       .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
       .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -23,8 +22,8 @@ spoony::vkcore::RenderPass::RenderPass(ContextHandle context,
 
   // Attachment 1: depth
   VkAttachmentDescription depthAttachment{
-      .format = config.depthStencilImageFormat,
-      .samples = config.msaaSamples,
+      .format = m_config.depthStencilImageFormat,
+      .samples = m_config.msaaSamples,
       .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
       .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
       .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -41,7 +40,7 @@ spoony::vkcore::RenderPass::RenderPass(ContextHandle context,
   // multisampled color attachments must be resolved to a "regular" image
   // for presentation
   VkAttachmentDescription colorResolveAttachment{
-      .format = config.colorImageFormat,
+      .format = m_config.colorImageFormat,
       .samples = VK_SAMPLE_COUNT_1_BIT,
       .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
       .storeOp = VK_ATTACHMENT_STORE_OP_STORE,

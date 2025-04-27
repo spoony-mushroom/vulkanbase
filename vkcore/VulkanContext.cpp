@@ -77,9 +77,6 @@ VulkanContext::VulkanContext(std::span<const char*> extensions,
 }
 
 VulkanContext::~VulkanContext() {
-  for (auto pool : std::views::values(m_commandPools)) {
-    vkDestroyCommandPool(m_device, pool, nullptr);
-  }
   vkDestroyDevice(m_device, nullptr);
   vkDestroyInstance(m_instance, nullptr);
 }
@@ -121,7 +118,6 @@ void VulkanContext::pickPhysicalDevice(VkSurfaceKHR surface) {
   for (const auto& device : devices) {
     if (isDeviceSuitable(device, surface)) {
       m_physicalDevice = device;
-      m_queueFamilyIndices = findQueueFamilies(m_physicalDevice, surface);
       break;
     }
   }
@@ -148,17 +144,14 @@ VkSampleCountFlagBits VulkanContext::getMaxSampleCount() const {
   return VK_SAMPLE_COUNT_1_BIT;
 }
 
-std::unique_ptr<CommandBuffer> VulkanContext::createCommandBuffer() {
-  return std::make_unique<CommandBuffer>(shared_from_this());
-}
-
 void VulkanContext::createLogicalDevice(VkSurfaceKHR surface) {
   VkPhysicalDeviceFeatures deviceFeatures{.samplerAnisotropy = VK_TRUE};
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+  auto indices = findQueueFamilies(m_physicalDevice, surface);
   std::set<uint32_t> uniqueQueueFamilies{
-      m_queueFamilyIndices.graphicsFamily.value(),
-      m_queueFamilyIndices.presentFamily.value()};
+      indices.graphicsFamily.value(),
+      indices.presentFamily.value()};
   float queuePriority = 1.f;
   for (auto queueFamily : uniqueQueueFamilies) {
     VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -186,26 +179,9 @@ void VulkanContext::createLogicalDevice(VkSurfaceKHR surface) {
     throw std::runtime_error("Unable to create logical device");
   }
 
-  vkGetDeviceQueue(m_device, m_queueFamilyIndices.graphicsFamily.value(), 0,
+  vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0,
                    &m_graphicsQueue);
-  vkGetDeviceQueue(m_device, m_queueFamilyIndices.presentFamily.value(), 0,
+  vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0,
                    &m_presentQueue);
-}
-
-VkCommandPool VulkanContext::getOrCreateCommandPool(std::thread::id id) {
-  auto itr = m_commandPools.find(id);
-  if (itr == m_commandPools.end()) {
-    VkCommandPoolCreateInfo poolInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = m_queueFamilyIndices.graphicsFamily.value()};
-
-    VkCommandPool commandPool;
-    VK_CHECK(vkCreateCommandPool(m_device, &poolInfo, nullptr, &commandPool),
-             "create command pool");
-    m_commandPools[id] = commandPool;
-    return commandPool;
-  }
-  return itr->second;
 }
 }  // namespace spoony::vkcore

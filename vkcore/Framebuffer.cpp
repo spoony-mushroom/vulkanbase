@@ -6,14 +6,14 @@ namespace spoony::vkcore {
 
 Framebuffer::Framebuffer(ContextHandle context,
                          std::span<VkImageView const> attachments,
-                         std::shared_ptr<RenderPass> renderPass,
+                         VkRenderPass renderPass,
                          VkExtent2D extent)
-    : m_context(context), m_renderPass(renderPass) {
+    : m_context(context) {
   VkFramebufferCreateInfo framebufferInfo{
       .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
       .attachmentCount = static_cast<uint32_t>(attachments.size()),
       .pAttachments = attachments.data(),
-      .renderPass = *m_renderPass,
+      .renderPass = renderPass,
       .width = extent.width,
       .height = extent.height,
       .layers = 1,  // single images

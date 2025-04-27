@@ -4,20 +4,23 @@
 #include "VulkanContext.hpp"
 
 namespace spoony::vkcore {
-class Fence {
+class Fence final {
  public:
   Fence(ContextHandle context);
   Fence(const Fence&) = delete;
   Fence(Fence&&) noexcept = default;
 
   ~Fence();
-  operator VkFence() { return m_fence; }
+  operator VkFence() const { return m_fence; }
+  const VkFence& get() const { return m_fence; }
+  void reset() const;
+  void wait(uint64_t timeout) const;
 
  private:
   ContextHandle m_context;
   VkFence m_fence;
 };
-class Semaphore {
+class Semaphore final {
  public:
   Semaphore(ContextHandle context);
   Semaphore(const Semaphore&) = delete;

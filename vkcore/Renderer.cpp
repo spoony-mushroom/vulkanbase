@@ -14,9 +14,6 @@ using namespace spoony::utils;
 // RenderPass for unlit geometry
 // Classes to hold Vertex and Texture data
 
-static constexpr char VERT_SHADER_SPV[]{"shaders/triangle_app_vert.spv"};
-static constexpr char FRAG_SHADER_SPV[]{"shaders/triangle_app_frag.spv"};
-
 const std::vector<Vertex> vertices{
     {.pos{-0.5f, -0.5f, 0.f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
     {.pos{0.5f, -0.5f, 0.f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
@@ -56,72 +53,105 @@ Renderer::Renderer(GLFWwindow* window) : Renderer() {
   m_surface =
       std::make_unique<WindowSurfaceImpl<GLFWwindow>>(m_context, window);
   init();
-  initFrameBuffers();
-  initSyncObjects();
+  // initFrameBuffers();
+  initFrameContexts();
 }
 
 void Renderer::init() {
   m_context.initialize(*m_surface);
   m_swapChain = std::make_unique<Swapchain>(m_context, *m_surface);
-
-  const RenderPassConfig renderPassConfig{
-      .colorImageFormat = m_swapChain->getFormat(),
-      .depthStencilImageFormat =
-          utils::findDepthFormat(m_context.physicalDevice()),
-      .msaaSamples = utils::getMaxUsableSampleCount(m_context.physicalDevice()),
-  };
-
-  m_renderPass = std::make_shared<RenderPass>(m_context, renderPassConfig);
-
-  PipelineBuilder pipelineBuilder(m_context, m_renderPass);
-  auto pipeline =
-      pipelineBuilder.setMaxFramesInFlight(2)
-          .setShaders(readFile(VERT_SHADER_SPV), readFile(FRAG_SHADER_SPV))
-          .setVertexType<Vertex>()
-          .addVertShaderUniform<UniformBufferObject>(0)
-          .addTextureSampler(1)
-          .create();
-
-  m_pipeline = std::move(pipeline);
 }
 
-void Renderer::initFrameBuffers() {
-  auto [width, height] = m_swapChain->getExtent();
-  TextureConfig textureConfig{
-      .width = width,
-      .height = height,
-      .format = m_swapChain->getFormat(),
-      .usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-      .memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      .numSamples = m_renderPass->getSampleCount(),
-      .aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT};
-  m_colorRenderTexture = std::make_unique<Texture>(m_context, textureConfig);
-
-  auto depthFormat = utils::findDepthFormat(m_context.physicalDevice());
-  textureConfig.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-  textureConfig.format = depthFormat;
-  textureConfig.aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
-  m_depthRenderTexture = std::make_unique<Texture>(m_context, textureConfig);
-
-  auto swapChainImageViews = m_swapChain->getImageViews();
-  m_framebuffers.reserve(swapChainImageViews.size());
-  for (size_t i = 0; i < m_framebuffers.size(); ++i) {
-    std::array attachments{m_colorRenderTexture->getImageView(),
-                           m_depthRenderTexture->getImageView(),
-                           swapChainImageViews[i]};
-    m_framebuffers.emplace_back(m_context, attachments, m_renderPass,
-                                m_swapChain->getExtent());
-  }
-}
-
-void Renderer::initSyncObjects() {
+void Renderer::initFrameContexts() {
   for (int i = 0; i < k_maxFramesInFlight; i++) {
-    m_imageAvailableSemaphores.emplace_back(m_context);
-    m_renderFinishedSemaphores.emplace_back(m_context);
-    m_inFlightFences.emplace_back(m_context);
+    m_frameContexts.emplace_back(m_context);
   }
 }
 
-void Renderer::renderFrame() {}
+void Renderer::drawFrame() {
+  m_frameContexts[m_currentFrame].inFlight.wait(
+      std::numeric_limits<uint64_t>::max());
+
+  uint32_t imageIndex;
+  VkResult result =
+      vkAcquireNextImageKHR(m_context.device(), *m_swapChain, UINT64_MAX,
+                            m_frameContexts[m_currentFrame].imageAvailable,
+                            VK_NULL_HANDLE, &imageIndex);
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    // Not possible to present to the swap chain in this state
+    m_swapChain = std::make_unique<Swapchain>(m_context, *m_surface);
+    return;
+  } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    throw std::runtime_error("failed to acquire swap chain image");
+  }
+
+  m_frameContexts[m_currentFrame].inFlight.reset();
+
+  auto cmdBuf = getCommandBuffer();
+
+  for (auto& module : m_renderModules) {
+    module->record(cmdBuf, imageIndex);
+  }
+  
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+  // Wait for imageAvailableSemaphore at the
+  // VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT stage of the pipeline since
+  // we want an image to be available before writing colors to it.
+  VkSemaphore waitSemaphores[]{m_frameContexts[m_currentFrame].imageAvailable};
+  VkPipelineStageFlags waitStages[] = {
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  submitInfo.waitSemaphoreCount = 1;
+  submitInfo.pWaitSemaphores = waitSemaphores;
+  submitInfo.pWaitDstStageMask = waitStages;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &cmdBuf.get();
+
+  VkSemaphore signalSemaphores[]{m_frameContexts[m_currentFrame].renderFinished};
+  submitInfo.signalSemaphoreCount = 1;
+  submitInfo.pSignalSemaphores = signalSemaphores;
+
+  VK_CHECK(vkQueueSubmit(m_context.get()->getGraphicsQueue(), 1, &submitInfo,
+    m_frameContexts[m_currentFrame].inFlight), "submit draw command buffer");
+  
+  VkPresentInfoKHR presentInfo{};
+  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.pWaitSemaphores = signalSemaphores;
+
+  VkSwapchainKHR swapChains[]{*m_swapChain};
+  presentInfo.swapchainCount = 1;
+  presentInfo.pSwapchains = swapChains;
+  presentInfo.pImageIndices = &imageIndex;
+  presentInfo.pResults = nullptr;
+
+  result = vkQueuePresentKHR(m_context.get()->getPresentQueue(), &presentInfo);
+  if (result != VK_SUCCESS) {
+    throw std::runtime_error("failed to present swap chain image");
+  }
+
+  m_currentFrame = (m_currentFrame + 1) % k_maxFramesInFlight;
+}
+
+std::shared_ptr<CommandPool> Renderer::getOrCreateCommandPool(
+    std::thread::id id) {
+  auto indices =
+      utils::findQueueFamilies(m_context.physicalDevice(), *m_surface);
+
+  auto itr = m_commandPools.find(id);
+  if (itr == m_commandPools.end()) {
+    auto commandPool = std::make_shared<CommandPool>(
+        m_context, indices.graphicsFamily.value());
+    m_commandPools[id] = commandPool;
+    return commandPool;
+  }
+  return itr->second;
+}
+
+CommandBuffer Renderer::getCommandBuffer(bool reset) {
+  auto pool = getOrCreateCommandPool(std::this_thread::get_id());
+  return pool->acquire(reset);
+}
 }  // namespace spoony::vkcore

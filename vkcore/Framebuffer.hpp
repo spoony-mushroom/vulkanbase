@@ -9,13 +9,12 @@ class Framebuffer {
  public:
   Framebuffer(ContextHandle context,
               std::span<VkImageView const> attachments,
-              std::shared_ptr<RenderPass> renderPass,
+              VkRenderPass renderPass,
               VkExtent2D extent);
   ~Framebuffer();
 
  private:
   ContextHandle m_context;
   VkFramebuffer m_framebuffer;
-  std::shared_ptr<RenderPass> m_renderPass;
 };
 }  // namespace spoony::vkcore

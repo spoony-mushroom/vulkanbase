@@ -8,10 +8,10 @@
 
 namespace spoony::vkcore {
 Pipeline::Pipeline(ContextHandle context,
-                   std::shared_ptr<RenderPass> renderPass,
+                   //    std::shared_ptr<RenderPass> renderPass,
                    int maxFramesInFlight)
     : m_context(context),
-      m_renderPass(renderPass),
+      //   m_renderPass(renderPass),
       k_maxFramesInFlight(maxFramesInFlight) {}
 
 Pipeline::~Pipeline() {
@@ -24,6 +24,7 @@ Pipeline::~Pipeline() {
 }
 
 void Pipeline::initialize(
+    const RenderPass& renderPass,
     VkVertexInputBindingDescription vertexBindingDescription,
     std::span<VkVertexInputAttributeDescription const>
         vertexAttributeDescriptions,
@@ -72,7 +73,7 @@ void Pipeline::initialize(
   VkPipelineMultisampleStateCreateInfo multisampling{
       .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
       .sampleShadingEnable = VK_FALSE,
-      .rasterizationSamples = m_renderPass->getSampleCount()};
+      .rasterizationSamples = renderPass.getSampleCount()};
 
   VkPipelineColorBlendAttachmentState colorBlendAttachment{
       .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -111,7 +112,7 @@ void Pipeline::initialize(
       .pDepthStencilState = &depthStencil,
 
       .layout = m_pipelineLayout,
-      .renderPass = *m_renderPass,
+      .renderPass = renderPass,
       .subpass = 0};
 
   VK_CHECK(vkCreateGraphicsPipelines(m_context.device(),
@@ -183,7 +184,7 @@ void Pipeline::createDescriptorSets() {
 }
 
 PipelineBuilder::PipelineBuilder(ContextHandle context,
-                                 std::shared_ptr<RenderPass> renderPass)
+                                 const RenderPass& renderPass)
     : m_context(context), m_renderPass(renderPass) {}
 
 PipelineBuilder& PipelineBuilder::setShaders(
@@ -228,7 +229,7 @@ PipelineBuilder& PipelineBuilder::addTextureSampler(uint32_t bindingIndex) {
 std::unique_ptr<Pipeline> PipelineBuilder::create() const {
   assert(m_renderPass != nullptr);
   auto pipeline =
-      std::make_unique<Pipeline>(m_context, m_renderPass, m_maxFramesInFlight);
+      std::make_unique<Pipeline>(m_context, m_maxFramesInFlight);
 
   auto bindingsValues = std::views::values(m_descriptorLayoutBindings);
   std::vector<VkDescriptorSetLayoutBinding> layoutBindings{
@@ -237,7 +238,7 @@ std::unique_ptr<Pipeline> PipelineBuilder::create() const {
   pipeline->createDescriptorSetLayout(layoutBindings);
   pipeline->createDescriptorPool();
   pipeline->createDescriptorSets();
-  pipeline->initialize(m_vertexBindingDescription,
+  pipeline->initialize(m_renderPass, m_vertexBindingDescription,
                        m_vertexAttributeDescriptions, m_shaderStages);
   for (auto [binding, size] : m_uniformSizes) {
     pipeline->createUniformBuffer(binding, size);
