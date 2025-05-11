@@ -46,6 +46,7 @@ class VulkanContext final {
 
 class ContextHandle {
  public:
+  ContextHandle() = default;
   ContextHandle(std::shared_ptr<VulkanContext> contextPtr)
       : m_context(contextPtr) {}
   ContextHandle(const ContextHandle&) = default;

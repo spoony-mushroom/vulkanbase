@@ -13,7 +13,11 @@ class Framebuffer {
               VkExtent2D extent);
   ~Framebuffer();
 
+  VkExtent2D getExtent() const { return m_extent; }
+  operator VkFramebuffer() const { return m_framebuffer; }
+
  private:
+  VkExtent2D m_extent{};
   ContextHandle m_context;
   VkFramebuffer m_framebuffer;
 };

@@ -10,6 +10,18 @@ struct RenderPassConfig {
   VkFormat depthStencilImageFormat;
   VkSampleCountFlagBits msaaSamples;
 };
+
+struct RenderPassScope final {
+ public:
+  ~RenderPassScope();
+
+ private:
+  RenderPassScope(VkCommandBuffer cmdBuf);
+  VkCommandBuffer m_cmdBuf;
+
+  friend class RenderPass;
+};
+
 class RenderPass final {
  public:
   RenderPass(ContextHandle context, RenderPassConfig config);
@@ -19,6 +31,10 @@ class RenderPass final {
   VkFormat getDepthImageFormat() const {
     return m_config.depthStencilImageFormat;
   }
+
+  RenderPassScope createScope(VkCommandBuffer cmdBuf,
+                              VkFramebuffer framebuffer,
+                              VkExtent2D extent) const;
 
   operator VkRenderPass() const { return m_renderPass; }
 

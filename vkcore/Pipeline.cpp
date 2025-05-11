@@ -23,6 +23,10 @@ Pipeline::~Pipeline() {
   vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
 }
 
+void Pipeline::bind(VkCommandBuffer cmdBuf) const {
+  vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+}
+
 void Pipeline::initialize(
     const RenderPass& renderPass,
     VkVertexInputBindingDescription vertexBindingDescription,
@@ -228,8 +232,7 @@ PipelineBuilder& PipelineBuilder::addTextureSampler(uint32_t bindingIndex) {
 
 std::unique_ptr<Pipeline> PipelineBuilder::create() const {
   assert(m_renderPass != nullptr);
-  auto pipeline =
-      std::make_unique<Pipeline>(m_context, m_maxFramesInFlight);
+  auto pipeline = std::make_unique<Pipeline>(m_context, m_maxFramesInFlight);
 
   auto bindingsValues = std::views::values(m_descriptorLayoutBindings);
   std::vector<VkDescriptorSetLayoutBinding> layoutBindings{

@@ -18,12 +18,25 @@ UnlitRenderPass::UnlitRenderPass(ContextHandle context,
   initPipeline();
 }
 
-void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {}
+void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
+  const auto& framebuffer = m_framebuffers[imageIndex];
+  auto renderScope =
+      m_renderPass.createScope(cmdBuf, framebuffer,
+                               framebuffer.getExtent());
+  m_pipeline->bind(cmdBuf);
+}
 
 void UnlitRenderPass::setOutputAttachments(
     std::span<const VkImageView> outputAttachments,
     VkExtent2D extent) {
-  initFrameBuffers(outputAttachments, extent);
+  initFramebuffers(outputAttachments, extent);
+}
+
+void UnlitRenderPass::setModelViewProjection(glm::mat4 model,
+                                             glm::mat4 view,
+                                             glm::mat4 proj) {
+  UniformBufferObject ubo{model, view, proj};
+  m_pipeline->updateUniform(0, ubo);
 }
 
 void UnlitRenderPass::initPipeline() {
@@ -36,7 +49,7 @@ void UnlitRenderPass::initPipeline() {
           .addTextureSampler(1)
           .create();
 }
-void UnlitRenderPass::initFrameBuffers(
+void UnlitRenderPass::initFramebuffers(
     std::span<const VkImageView> outputAttachments,
     VkExtent2D extent) {
   TextureConfig textureConfig{

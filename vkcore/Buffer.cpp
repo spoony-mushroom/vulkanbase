@@ -23,22 +23,21 @@ static uint32_t findMemoryType(VkPhysicalDevice physicalDevice,
   throw std::runtime_error("unable to find suitable memory type");
 }
 
-void createBuffer(ContextHandle context,
-                  VkDeviceSize size,
-                  VkBufferUsageFlags usage,
-                  VkMemoryPropertyFlags properties,
-                  VkBuffer& buffer,
-                  VkDeviceMemory& memory) {
+Buffer::Buffer(ContextHandle context,
+               VkDeviceSize size,
+               VkBufferUsageFlags usage,
+               VkMemoryPropertyFlags properties)
+    : m_context(context), m_size(size) {
   VkBufferCreateInfo bufferInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                                 .size = size,
                                 .usage = usage,
                                 .sharingMode = VK_SHARING_MODE_EXCLUSIVE};
 
-  VK_CHECK(vkCreateBuffer(context.device(), &bufferInfo, nullptr, &buffer),
+  VK_CHECK(vkCreateBuffer(context.device(), &bufferInfo, nullptr, &m_buffer),
            "create  buffer");
 
   VkMemoryRequirements memRequirements;
-  vkGetBufferMemoryRequirements(context.device(), buffer, &memRequirements);
+  vkGetBufferMemoryRequirements(context.device(), m_buffer, &memRequirements);
 
   VkMemoryAllocateInfo allocInfo{
       .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -47,9 +46,25 @@ void createBuffer(ContextHandle context,
           findMemoryType(context.physicalDevice(),
                          memRequirements.memoryTypeBits, properties)};
 
-  VK_CHECK(vkAllocateMemory(context.device(), &allocInfo, nullptr, &memory),
-           "allocate buffer memory");
+  VK_CHECK(
+      vkAllocateMemory(context.device(), &allocInfo, nullptr, &m_bufferMemory),
+      "allocate buffer memory");
 
-  vkBindBufferMemory(context.device(), buffer, memory, 0);
+  vkBindBufferMemory(context.device(), m_buffer, m_bufferMemory, 0);
 }
+
+void Buffer::bindVertex(VkCommandBuffer cmdBuf) {
+  VkDeviceSize offset{0};
+  vkCmdBindVertexBuffers(cmdBuf, 0, 1, &m_buffer, &offset);
+}
+
+void Buffer::bindIndex(VkCommandBuffer cmdBuf) {
+  vkCmdBindIndexBuffer(cmdBuf, m_buffer, 0, VK_INDEX_TYPE_UINT32);
+}
+
+Buffer::~Buffer() {
+  vkDestroyBuffer(m_context.device(), m_buffer, nullptr);
+  vkFreeMemory(m_context.device(), m_bufferMemory, nullptr);
+}
+
 }  // namespace spoony::vkcore

@@ -20,7 +20,7 @@ class Pipeline {
   void bindUniforms(VkCommandBuffer cmdBuf) const;
 
   template <typename T>
-  void updateUniform(uint32_t bindingIdx, T&& data) {
+  void updateUniform(uint32_t bindingIdx, const T& data) {
     m_uniformBuffers[bindingIdx].data<T>() = data;
   }
 

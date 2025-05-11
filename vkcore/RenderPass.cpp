@@ -115,4 +115,33 @@ spoony::vkcore::RenderPass::RenderPass(ContextHandle context,
 RenderPass::~RenderPass() {
   vkDestroyRenderPass(m_context.device(), m_renderPass, nullptr);
 }
+
+RenderPassScope RenderPass::createScope(VkCommandBuffer cmdBuf,
+                                        VkFramebuffer framebuffer,
+                                        VkExtent2D extent) const {
+  // Because we specified LOAD_OP_CLEAR, we need to specific a clear colour
+  // value.
+  // clear values defined in the order of attachment indices (layout)
+  std::array<VkClearValue, 2> clearValues{{
+      {.color{0.f, 0.f, 0.f, 1.0}},
+      {.depthStencil{1.f, 0}}  // 1.0 is the furthest possible depth
+  }};
+
+  VkRenderPassBeginInfo renderPassInfo{
+      .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+      .renderPass = m_renderPass,
+      .framebuffer = framebuffer,
+      .renderArea.offset = {0, 0},
+      .renderArea.extent = extent,
+      .clearValueCount = clearValues.size(),
+      .pClearValues = clearValues.data()};
+
+  vkCmdBeginRenderPass(cmdBuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  return {cmdBuf};
+}
+
+RenderPassScope::RenderPassScope(VkCommandBuffer cmdBuf) : m_cmdBuf(cmdBuf) {}
+RenderPassScope::~RenderPassScope() {
+  vkCmdEndRenderPass(m_cmdBuf);
+}
 }  // namespace spoony::vkcore

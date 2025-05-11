@@ -8,6 +8,7 @@ set(ENGINE_SOURCES
     vkcore/Buffer.cpp
     vkcore/CommandBuffer.cpp
     vkcore/Framebuffer.cpp
+    vkcore/Mesh.cpp
     vkcore/Pipeline.cpp
     vkcore/Renderer.cpp
     vkcore/RenderPass.cpp

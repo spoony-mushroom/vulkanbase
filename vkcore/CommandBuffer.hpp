@@ -11,7 +11,12 @@ class CommandBuffer {
   CommandBuffer(VkCommandBuffer cmdBuf, std::shared_ptr<CommandPool> pool)
       : m_commandBuffer(cmdBuf), m_pool(pool) {}
   CommandBuffer(const CommandBuffer&) = delete;
-  CommandBuffer(CommandBuffer&&) noexcept = default;
+  CommandBuffer(CommandBuffer&& other) noexcept{
+    m_commandBuffer = other.m_commandBuffer;
+    m_pool = std::move(other.m_pool);
+
+    other.m_commandBuffer = VK_NULL_HANDLE;    
+  }
   ~CommandBuffer();
 
   const VkCommandBuffer& get() const noexcept { return m_commandBuffer; }

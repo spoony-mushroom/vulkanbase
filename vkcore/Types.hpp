@@ -76,6 +76,12 @@ struct UniformBufferObject {
   alignas(16) glm::mat4 view;
   alignas(16) glm::mat4 proj;
 };
+
+struct MeshData {
+  std::vector<Vertex> m_vertices;
+  std::vector<uint16_t> m_indices;
+};
+
 }  // namespace spoony::vkcore
 
 namespace std {

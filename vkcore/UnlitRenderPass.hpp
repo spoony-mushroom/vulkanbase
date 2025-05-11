@@ -16,6 +16,8 @@ class UnlitRenderPass : public RenderPassModule {
   void setOutputAttachments(std::span<const VkImageView> outputAttachments,
                             VkExtent2D extent);
 
+  void setModelViewProjection(glm::mat4 model, glm::mat4 view, glm::mat4 proj);
+
  private:
   const int k_maxFramesInFlight;
   ContextHandle m_context;
@@ -26,7 +28,7 @@ class UnlitRenderPass : public RenderPassModule {
   std::unique_ptr<Texture> m_depthRenderTexture;
 
   void initPipeline();
-  void initFrameBuffers(std::span<const VkImageView> outputAttachments,
+  void initFramebuffers(std::span<const VkImageView> outputAttachments,
                         VkExtent2D extent);
 };
 }  // namespace spoony::vkcore

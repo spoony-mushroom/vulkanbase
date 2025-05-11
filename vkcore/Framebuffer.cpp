@@ -22,6 +22,8 @@ Framebuffer::Framebuffer(ContextHandle context,
   VK_CHECK(vkCreateFramebuffer(m_context.device(), &framebufferInfo, nullptr,
                                &m_framebuffer),
            "create framebuffer");
+
+  m_extent = extent;
 }
 
 Framebuffer::~Framebuffer() {

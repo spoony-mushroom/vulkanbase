@@ -7,12 +7,42 @@
 #include "Utils.hpp"
 #include "VulkanUtils.hpp"
 
+// Render pass implementations
+#include "UnlitRenderPass.hpp"
+
 namespace spoony::vkcore {
 using namespace spoony::utils;
 
-// TODO:
-// RenderPass for unlit geometry
-// Classes to hold Vertex and Texture data
+
+class AutoSubmitCommandBuffer {
+  public:
+   AutoSubmitCommandBuffer(CommandBuffer cmdBuffer, VkQueue queue)
+       : commandBuffer(std::move(cmdBuffer)), queue(queue) {
+
+     VkCommandBufferBeginInfo beingInfo{
+         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+
+     vkBeginCommandBuffer(commandBuffer, &beingInfo);
+   }
+
+   ~AutoSubmitCommandBuffer() {
+     vkEndCommandBuffer(commandBuffer);
+
+     VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                             .commandBufferCount = 1,
+                             .pCommandBuffers = &commandBuffer.get()};
+
+     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+     vkQueueWaitIdle(queue);
+   }
+
+   operator VkCommandBuffer() const noexcept { return commandBuffer; }
+
+  private:
+   CommandBuffer commandBuffer;
+   VkQueue queue;
+ };
 
 const std::vector<Vertex> vertices{
     {.pos{-0.5f, -0.5f, 0.f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
@@ -68,6 +98,18 @@ void Renderer::initFrameContexts() {
   }
 }
 
+void Renderer::registerCurrentThread() {
+  auto threadId = std::this_thread::get_id();
+  auto indices =
+      utils::findQueueFamilies(m_context.physicalDevice(), *m_surface);
+
+  std::unique_lock lck(m_commandPoolMutex);
+  if (auto itr = m_commandPools.find(threadId); itr == m_commandPools.end()) {
+    m_commandPools[threadId] = std::make_shared<CommandPool>(
+        m_context, indices.graphicsFamily.value());
+  }
+}
+
 void Renderer::drawFrame() {
   m_frameContexts[m_currentFrame].inFlight.wait(
       std::numeric_limits<uint64_t>::max());
@@ -92,7 +134,7 @@ void Renderer::drawFrame() {
   for (auto& module : m_renderModules) {
     module->record(cmdBuf, imageIndex);
   }
-  
+
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -108,13 +150,15 @@ void Renderer::drawFrame() {
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &cmdBuf.get();
 
-  VkSemaphore signalSemaphores[]{m_frameContexts[m_currentFrame].renderFinished};
+  VkSemaphore signalSemaphores[]{
+      m_frameContexts[m_currentFrame].renderFinished};
   submitInfo.signalSemaphoreCount = 1;
   submitInfo.pSignalSemaphores = signalSemaphores;
 
   VK_CHECK(vkQueueSubmit(m_context.get()->getGraphicsQueue(), 1, &submitInfo,
-    m_frameContexts[m_currentFrame].inFlight), "submit draw command buffer");
-  
+                         m_frameContexts[m_currentFrame].inFlight),
+           "submit draw command buffer");
+
   VkPresentInfoKHR presentInfo{};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -135,23 +179,46 @@ void Renderer::drawFrame() {
   m_currentFrame = (m_currentFrame + 1) % k_maxFramesInFlight;
 }
 
-std::shared_ptr<CommandPool> Renderer::getOrCreateCommandPool(
-    std::thread::id id) {
-  auto indices =
-      utils::findQueueFamilies(m_context.physicalDevice(), *m_surface);
+VkExtent2D Renderer::getExtent() const {
+  return m_swapChain->getExtent();
+}
 
+void Renderer::copyBuffer(const Buffer& src, Buffer& dst) const {
+  auto scope = AutoSubmitCommandBuffer(getCommandBuffer(), m_context.get()->getGraphicsQueue());
+  VkBufferCopy copyRegion{.size = src.getSize()};
+  vkCmdCopyBuffer(scope, src, dst, 1, &copyRegion);
+}
+
+std::shared_ptr<CommandPool> Renderer::getCommandPool() const {
+  auto id = std::this_thread::get_id();
   auto itr = m_commandPools.find(id);
   if (itr == m_commandPools.end()) {
-    auto commandPool = std::make_shared<CommandPool>(
-        m_context, indices.graphicsFamily.value());
-    m_commandPools[id] = commandPool;
-    return commandPool;
+    throw std::runtime_error("Unable to get a command pool. Did you call registerCurrentThread()?");
   }
   return itr->second;
 }
 
-CommandBuffer Renderer::getCommandBuffer(bool reset) {
-  auto pool = getOrCreateCommandPool(std::this_thread::get_id());
+CommandBuffer Renderer::getCommandBuffer(bool reset) const {
+  auto pool = getCommandPool();
   return pool->acquire(reset);
+}
+
+template <>
+UnlitRenderPass& Renderer::addRenderPassModule<UnlitRenderPass>() {
+  RenderPassConfig config{
+      .colorImageFormat = m_swapChain->getFormat(),
+      .depthStencilImageFormat =
+          utils::findDepthFormat(m_context.physicalDevice()),
+      .msaaSamples =
+          utils::getMaxUsableSampleCount(m_context.physicalDevice())};
+  m_renderModules.push_back(
+      std::make_unique<UnlitRenderPass>(m_context, config, 2));
+
+  UnlitRenderPass* renderPass =
+      static_cast<UnlitRenderPass*>(m_renderModules.back().get());
+
+  renderPass->setOutputAttachments(m_swapChain->getImageViews(),
+                                   m_swapChain->getExtent());
+  return *renderPass;
 }
 }  // namespace spoony::vkcore
