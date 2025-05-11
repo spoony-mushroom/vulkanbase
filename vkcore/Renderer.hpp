@@ -35,6 +35,7 @@ class Renderer {
 
   VkExtent2D getExtent() const;
   void copyBuffer(const Buffer& src, Buffer& dst) const;
+  ContextHandle getContext() const { return m_context; }
 
  private:
   const int k_maxFramesInFlight{2};

@@ -78,8 +78,15 @@ struct UniformBufferObject {
 };
 
 struct MeshData {
-  std::vector<Vertex> m_vertices;
-  std::vector<uint16_t> m_indices;
+  std::vector<Vertex> vertices;
+  std::vector<uint16_t> indices;
+
+  size_t getVertexBufferSizeBytes() const {
+    return vertices.size() * sizeof(vertices.front());
+  }
+  size_t getIndexBufferSizeBytes() const {
+    return indices.size() * sizeof(indices.front());
+  }
 };
 
 }  // namespace spoony::vkcore

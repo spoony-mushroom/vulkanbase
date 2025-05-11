@@ -1,12 +1,15 @@
 #pragma once
 
 #include "Buffer.hpp"
+#include "Renderer.hpp"
 
-namespace spoony::vkcore{
+namespace spoony::vkcore {
 class Mesh {
-    public:
-    private:
-    Buffer m_vertexBuffer;
-    Buffer m_indexBuffer;
+ public:
+  Mesh(const MeshData& data, const Renderer& renderer);
+
+ private:
+  Buffer m_vertexBuffer;
+  Buffer m_indexBuffer;
 };
-}
+}  // namespace spoony::vkcore

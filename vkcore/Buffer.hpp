@@ -7,10 +7,11 @@ namespace spoony::vkcore {
 class Buffer {
  public:
   Buffer() = default;
-  Buffer(ContextHandle context,
-         VkDeviceSize size,
-         VkBufferUsageFlags usage,
-         VkMemoryPropertyFlags properties);
+  Buffer(
+      ContextHandle context,
+      VkDeviceSize size,
+      VkBufferUsageFlags usage,
+      VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
   void bindVertex(VkCommandBuffer cmdBuf);
   void bindIndex(VkCommandBuffer cmdBuf);
   VkDeviceSize getSize() const { return m_size; };
@@ -74,4 +75,6 @@ class MappedUniformBuffer : public HostVisibleBuffer {
  private:
   void* m_mappedData;
 };
+
+class VertexBuffer : public Buffer {};
 }  // namespace spoony::vkcore
