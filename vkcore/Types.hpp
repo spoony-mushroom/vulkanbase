@@ -78,8 +78,9 @@ struct UniformBufferObject {
 };
 
 struct MeshData {
+  using IndexType = uint16_t;
   std::vector<Vertex> vertices;
-  std::vector<uint16_t> indices;
+  std::vector<IndexType> indices;
 
   size_t getVertexBufferSizeBytes() const {
     return vertices.size() * sizeof(vertices.front());

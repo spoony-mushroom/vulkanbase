@@ -137,6 +137,22 @@ RenderPassScope RenderPass::createScope(VkCommandBuffer cmdBuf,
       .pClearValues = clearValues.data()};
 
   vkCmdBeginRenderPass(cmdBuf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  
+  // Set up viewport and scissor dynamically
+  VkViewport viewport{};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width = static_cast<float>(extent.width);
+  viewport.height = static_cast<float>(extent.height);
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(cmdBuf, 0, 1, &viewport);
+
+  VkRect2D scissor{};
+  scissor.offset = {0, 0};
+  scissor.extent = extent;
+  vkCmdSetScissor(cmdBuf, 0, 1, &scissor);
+
   return {cmdBuf};
 }
 

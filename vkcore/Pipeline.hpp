@@ -17,7 +17,7 @@ class Pipeline {
            int maxFramesInFlight);
   ~Pipeline();
   void bind(VkCommandBuffer cmdBuf) const;
-  void bindUniforms(VkCommandBuffer cmdBuf) const;
+  void bindUniforms(VkCommandBuffer cmdBuf, size_t imageIndex) const;
 
   template <typename T>
   void updateUniform(uint32_t bindingIdx, const T& data) {
@@ -34,8 +34,6 @@ class Pipeline {
   VkDescriptorPool m_descriptorPool;
   std::vector<VkDescriptorSet> m_descriptorSets;
   std::map<uint32_t, MappedUniformBuffer> m_uniformBuffers;
-
-  // std::shared_ptr<RenderPass> m_renderPass;
 
   void createDescriptorSetLayout(
       std::span<const VkDescriptorSetLayoutBinding> bindings);

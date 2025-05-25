@@ -53,6 +53,30 @@ Buffer::Buffer(ContextHandle context,
   vkBindBufferMemory(context.device(), m_buffer, m_bufferMemory, 0);
 }
 
+Buffer::Buffer(Buffer&& other) {
+  m_buffer = other.m_buffer;
+  m_bufferMemory = other.m_bufferMemory;
+  m_context = std::move(other.m_context);
+  m_size = other.m_size;
+
+  other.m_buffer = VK_NULL_HANDLE;
+  other.m_bufferMemory = VK_NULL_HANDLE;
+  other.m_size = 0;
+}
+
+Buffer& Buffer::operator=(Buffer&& other) {
+  reset();
+  m_buffer = other.m_buffer;
+  m_bufferMemory = other.m_bufferMemory;
+  m_context = std::move(other.m_context);
+  m_size = other.m_size;
+
+  other.m_buffer = VK_NULL_HANDLE;
+  other.m_bufferMemory = VK_NULL_HANDLE;
+  other.m_size = 0;
+  return *this;
+}
+
 void Buffer::bindVertex(VkCommandBuffer cmdBuf) {
   VkDeviceSize offset{0};
   vkCmdBindVertexBuffers(cmdBuf, 0, 1, &m_buffer, &offset);
@@ -62,9 +86,17 @@ void Buffer::bindIndex(VkCommandBuffer cmdBuf) {
   vkCmdBindIndexBuffer(cmdBuf, m_buffer, 0, VK_INDEX_TYPE_UINT32);
 }
 
-Buffer::~Buffer() {
+void Buffer::reset() {
+  if (m_buffer == VK_NULL_HANDLE) {
+    return;
+  }
+
   vkDestroyBuffer(m_context.device(), m_buffer, nullptr);
   vkFreeMemory(m_context.device(), m_bufferMemory, nullptr);
+}
+
+Buffer::~Buffer() {
+  reset();
 }
 
 }  // namespace spoony::vkcore

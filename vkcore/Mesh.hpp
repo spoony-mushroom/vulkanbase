@@ -7,6 +7,7 @@ namespace spoony::vkcore {
 class Mesh {
  public:
   Mesh(const MeshData& data, const Renderer& renderer);
+  void draw(VkCommandBuffer cmdBuf);
 
  private:
   Buffer m_vertexBuffer;

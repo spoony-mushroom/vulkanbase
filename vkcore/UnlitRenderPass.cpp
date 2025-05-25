@@ -24,6 +24,10 @@ void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
       m_renderPass.createScope(cmdBuf, framebuffer,
                                framebuffer.getExtent());
   m_pipeline->bind(cmdBuf);
+  m_pipeline->bindUniforms(cmdBuf, imageIndex);
+  for(auto mesh : m_meshes) {
+    mesh->draw(cmdBuf);
+  }
 }
 
 void UnlitRenderPass::setOutputAttachments(
@@ -39,6 +43,10 @@ void UnlitRenderPass::setModelViewProjection(glm::mat4 model,
   m_pipeline->updateUniform(0, ubo);
 }
 
+void UnlitRenderPass::addMesh(std::shared_ptr<Mesh> mesh) {
+  m_meshes.insert(mesh);
+}
+
 void UnlitRenderPass::initPipeline() {
   PipelineBuilder pipelineBuilder(m_context, m_renderPass);
   m_pipeline =
@@ -49,6 +57,7 @@ void UnlitRenderPass::initPipeline() {
           .addTextureSampler(1)
           .create();
 }
+
 void UnlitRenderPass::initFramebuffers(
     std::span<const VkImageView> outputAttachments,
     VkExtent2D extent) {

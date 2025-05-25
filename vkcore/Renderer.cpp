@@ -13,50 +13,34 @@
 namespace spoony::vkcore {
 using namespace spoony::utils;
 
-
 class AutoSubmitCommandBuffer {
-  public:
-   AutoSubmitCommandBuffer(CommandBuffer cmdBuffer, VkQueue queue)
-       : commandBuffer(std::move(cmdBuffer)), queue(queue) {
+ public:
+  AutoSubmitCommandBuffer(CommandBuffer cmdBuffer, VkQueue queue)
+      : commandBuffer(std::move(cmdBuffer)), queue(queue) {
+    VkCommandBufferBeginInfo beingInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
 
-     VkCommandBufferBeginInfo beingInfo{
-         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+    vkBeginCommandBuffer(commandBuffer, &beingInfo);
+  }
 
-     vkBeginCommandBuffer(commandBuffer, &beingInfo);
-   }
+  ~AutoSubmitCommandBuffer() {
+    vkEndCommandBuffer(commandBuffer);
 
-   ~AutoSubmitCommandBuffer() {
-     vkEndCommandBuffer(commandBuffer);
+    VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                            .commandBufferCount = 1,
+                            .pCommandBuffers = &commandBuffer.get()};
 
-     VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                             .commandBufferCount = 1,
-                             .pCommandBuffers = &commandBuffer.get()};
+    vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(queue);
+  }
 
-     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-     vkQueueWaitIdle(queue);
-   }
+  operator VkCommandBuffer() const noexcept { return commandBuffer; }
 
-   operator VkCommandBuffer() const noexcept { return commandBuffer; }
-
-  private:
-   CommandBuffer commandBuffer;
-   VkQueue queue;
- };
-
-const std::vector<Vertex> vertices{
-    {.pos{-0.5f, -0.5f, 0.f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
-    {.pos{0.5f, -0.5f, 0.f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
-    {.pos{0.5f, 0.5f, 0.f}, .color{0, 0, 1.f}, .texCoord{1.f, 0}},
-    {.pos{-0.5f, 0.5f, 0.f}, .color{1.f, 1.f, 1.f}, .texCoord{0, 0}},
-
-    {.pos{-0.5f, -0.5f, -0.5f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
-    {.pos{0.5f, -0.5f, -0.5f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
-    {.pos{0.5f, 0.5f, -0.5f}, .color{0, 0, 1.f}, .texCoord{1.f, 0}},
-    {.pos{-0.5f, 0.5f, -0.5f}, .color{1.f, 1.f, 1.f}, .texCoord{0, 0}}};
-
-// limited to 65535 vertices
-const std::vector<uint16_t> indices{0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+ private:
+  CommandBuffer commandBuffer;
+  VkQueue queue;
+};
 
 static ContextHandle makeContext() {
   uint32_t glfwExtensionCount;
@@ -129,11 +113,19 @@ void Renderer::drawFrame() {
 
   m_frameContexts[m_currentFrame].inFlight.reset();
 
+  static constexpr VkCommandBufferBeginInfo beginInfo{
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+
   auto cmdBuf = getCommandBuffer();
+
+  VK_CHECK(vkBeginCommandBuffer(cmdBuf, &beginInfo),
+           "begin recording command buffer");
 
   for (auto& module : m_renderModules) {
     module->record(cmdBuf, imageIndex);
   }
+
+  VK_CHECK(vkEndCommandBuffer(cmdBuf), "record command buffer");
 
   VkSubmitInfo submitInfo{};
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -184,7 +176,8 @@ VkExtent2D Renderer::getExtent() const {
 }
 
 void Renderer::copyBuffer(const Buffer& src, Buffer& dst) const {
-  auto scope = AutoSubmitCommandBuffer(getCommandBuffer(), m_context.get()->getGraphicsQueue());
+  auto scope = AutoSubmitCommandBuffer(getCommandBuffer(),
+                                       m_context.get()->getGraphicsQueue());
   VkBufferCopy copyRegion{.size = src.getSize()};
   vkCmdCopyBuffer(scope, src, dst, 1, &copyRegion);
 }
@@ -193,7 +186,8 @@ std::shared_ptr<CommandPool> Renderer::getCommandPool() const {
   auto id = std::this_thread::get_id();
   auto itr = m_commandPools.find(id);
   if (itr == m_commandPools.end()) {
-    throw std::runtime_error("Unable to get a command pool. Did you call registerCurrentThread()?");
+    throw std::runtime_error(
+        "Unable to get a command pool. Did you call registerCurrentThread()?");
   }
   return itr->second;
 }

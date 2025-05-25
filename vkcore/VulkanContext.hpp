@@ -68,6 +68,11 @@ class ContextHandle {
     return m_context != nullptr;
   }
 
+  ContextHandle& operator=(ContextHandle&& other) {
+    m_context = std::move(other.m_context);
+    return *this;
+  }
+
  private:
   std::shared_ptr<VulkanContext> m_context;
 };

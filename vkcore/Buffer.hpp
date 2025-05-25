@@ -12,16 +12,20 @@ class Buffer {
       VkDeviceSize size,
       VkBufferUsageFlags usage,
       VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  Buffer(Buffer&& other);
+  
   void bindVertex(VkCommandBuffer cmdBuf);
   void bindIndex(VkCommandBuffer cmdBuf);
   VkDeviceSize getSize() const { return m_size; };
   operator VkBuffer() const { return m_buffer; }
+  Buffer& operator=(Buffer&& other);
 
   virtual ~Buffer();
 
  protected:
   VkDevice getDevice() const { return m_context.device(); };
   VkDeviceMemory getMemory() const { return m_bufferMemory; };
+  void reset();
 
  private:
   ContextHandle m_context;

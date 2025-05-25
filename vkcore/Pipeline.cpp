@@ -4,6 +4,7 @@
 
 #include "Shader.hpp"
 #include "Types.hpp"
+#include "Utils.hpp"
 #include "VulkanUtils.hpp"
 
 namespace spoony::vkcore {
@@ -25,6 +26,12 @@ Pipeline::~Pipeline() {
 
 void Pipeline::bind(VkCommandBuffer cmdBuf) const {
   vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+}
+
+void Pipeline::bindUniforms(VkCommandBuffer cmdBuf, size_t imageIndex) const {
+  vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex],
+                          0, nullptr);
 }
 
 void Pipeline::initialize(
@@ -185,6 +192,28 @@ void Pipeline::createDescriptorSets() {
   VK_CHECK(vkAllocateDescriptorSets(m_context.device(), &allocInfo,
                                     m_descriptorSets.data()),
            "allocate descriptor sets");
+
+  for (int i = 0; i < k_maxFramesInFlight; i++) {
+    auto descriptorWrites = spoony::utils::to_vector(
+        m_uniformBuffers | std::views::transform([this, i](const auto& item) {
+          const auto& [binding, buffer] = item;
+          VkDescriptorBufferInfo bufferInfo{
+              .buffer = buffer, .offset = 0, .range = buffer.getSize()};
+          return VkWriteDescriptorSet{
+              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+              .dstSet = m_descriptorSets[i],
+              .dstBinding = binding,
+              .dstArrayElement = 0,  // descriptors can be arrays
+              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+              .descriptorCount = 1,
+              .pBufferInfo = &bufferInfo};
+        }));
+
+    vkUpdateDescriptorSets(m_context.device(), descriptorWrites.size(),
+                           descriptorWrites.data(), 0, nullptr);
+  }
+
+  // TODO: texture sampler uniforms!!
 }
 
 PipelineBuilder::PipelineBuilder(ContextHandle context,
@@ -215,7 +244,8 @@ PipelineBuilder& PipelineBuilder::setShaders(
 
 PipelineBuilder& PipelineBuilder::addTextureSampler(uint32_t bindingIndex) {
   if (m_descriptorLayoutBindings.contains(bindingIndex)) {
-    throw std::runtime_error("Another binding already exists at ");
+    throw std::runtime_error(
+        std::format("Another binding already exists at {}", bindingIndex));
   }
 
   m_descriptorLayoutBindings.emplace(

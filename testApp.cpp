@@ -34,7 +34,7 @@ class TestApp {
     initMeshes();
     while (!glfwWindowShouldClose(m_window)) {
       glfwPollEvents();
-      // m_renderer->drawFrame();
+      m_renderer->drawFrame();
     }
   }
 
@@ -46,7 +46,7 @@ class TestApp {
   std::unique_ptr<vkcore::Renderer> m_renderer;
   vkcore::UnlitRenderPass* m_renderPass;
 
-  std::unique_ptr<vkcore::Mesh> m_mesh;
+  std::shared_ptr<vkcore::Mesh> m_mesh;
 
   static void frameBufferResizeCallback(GLFWwindow* window,
                                         int width,
@@ -69,7 +69,7 @@ class TestApp {
         .indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4}
     };
 
-    m_mesh = std::make_unique<vkcore::Mesh>(meshData, *m_renderer);
+    m_renderPass->addMesh(std::make_shared<vkcore::Mesh>(meshData, *m_renderer));
   }
 
   void updateCamera() {

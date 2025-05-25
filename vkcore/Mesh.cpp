@@ -19,3 +19,10 @@ spoony::vkcore::Mesh::Mesh(const MeshData& data, const Renderer& renderer)
                                        
   renderer.copyBuffer(indexStagingBuffer, m_indexBuffer);
 }
+
+void spoony::vkcore::Mesh::draw(VkCommandBuffer cmdBuf) {
+    m_vertexBuffer.bindVertex(cmdBuf);
+    m_indexBuffer.bindIndex(cmdBuf);
+    auto numIndices = m_indexBuffer.getSize() / sizeof(MeshData::IndexType);
+    vkCmdDrawIndexed(cmdBuf, numIndices, 1, 0, 0, 0);
+}
