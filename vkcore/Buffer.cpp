@@ -82,8 +82,8 @@ void Buffer::bindVertex(VkCommandBuffer cmdBuf) {
   vkCmdBindVertexBuffers(cmdBuf, 0, 1, &m_buffer, &offset);
 }
 
-void Buffer::bindIndex(VkCommandBuffer cmdBuf) {
-  vkCmdBindIndexBuffer(cmdBuf, m_buffer, 0, VK_INDEX_TYPE_UINT32);
+void Buffer::bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType) {
+  vkCmdBindIndexBuffer(cmdBuf, m_buffer, 0, indexType);
 }
 
 void Buffer::reset() {

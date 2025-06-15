@@ -30,6 +30,16 @@ find_package(glfw3 REQUIRED)
 target_link_libraries(VulkanTesting glfw Vulkan::Vulkan)
 target_include_directories(VulkanTesting PRIVATE ${CMAKE_SOURCE_DIR}/ThirdParty)
 
+message(STATUS "Compiler ID is ${CMAKE_CXX_COMPILER_ID}")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_definitions(VulkanTesting PRIVATE _GLIBCXX_DEBUG)
+    message(STATUS "Enabling debug libstdc++")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    target_link_options(VulkanTesting PRIVATE "-fsanitize=address")
+    message(STATUS "Enabling Address Sanitizer")
+endif()
+
+
 # Shader compilation target
 find_program(GLSLC glslc REQUIRED)
 

@@ -18,14 +18,18 @@ UnlitRenderPass::UnlitRenderPass(ContextHandle context,
   initPipeline();
 }
 
+void UnlitRenderPass::bindFramebuffer(int framebufferIndex) {
+  m_activeFramebuffer = &m_framebuffers[framebufferIndex];
+}
+
 void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
-  const auto& framebuffer = m_framebuffers[imageIndex];
-  auto renderScope =
-      m_renderPass.createScope(cmdBuf, framebuffer,
-                               framebuffer.getExtent());
+  // const auto& framebuffer = m_framebuffers[imageIndex];
+  assert(m_activeFramebuffer != nullptr);
+  auto renderScope = m_renderPass.createScope(cmdBuf, *m_activeFramebuffer,
+                                              m_activeFramebuffer->getExtent());
   m_pipeline->bind(cmdBuf);
   m_pipeline->bindUniforms(cmdBuf, imageIndex);
-  for(auto mesh : m_meshes) {
+  for (auto mesh : m_meshes) {
     mesh->draw(cmdBuf);
   }
 }
@@ -54,7 +58,7 @@ void UnlitRenderPass::initPipeline() {
           .setShaders(readFile(VERT_SHADER_SPV), readFile(FRAG_SHADER_SPV))
           .setVertexType<Vertex>()
           .addVertShaderUniform<UniformBufferObject>(0)
-          .addTextureSampler(1)
+          // .addTextureSampler(1)
           .create();
 }
 
@@ -63,7 +67,7 @@ void UnlitRenderPass::initFramebuffers(
     VkExtent2D extent) {
   TextureConfig textureConfig{
       .width = extent.width,
-      .height = extent.width,
+      .height = extent.height,
       .format = m_renderPass.getColorImageFormat(),
       .usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -80,10 +84,10 @@ void UnlitRenderPass::initFramebuffers(
   m_depthRenderTexture = std::make_unique<Texture>(m_context, textureConfig);
 
   m_framebuffers.reserve(outputAttachments.size());
-  for (size_t i = 0; i < m_framebuffers.size(); ++i) {
+  for (const auto& outputAttachment : outputAttachments) {
     std::array attachments{m_colorRenderTexture->getImageView(),
                            m_depthRenderTexture->getImageView(),
-                           outputAttachments[i]};
+                           outputAttachment};
     m_framebuffers.emplace_back(m_context, attachments, m_renderPass, extent);
   }
 }

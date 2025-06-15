@@ -155,9 +155,13 @@ void Pipeline::createDescriptorSetLayout(
 }
 
 void Pipeline::createUniformBuffer(uint32_t binding, size_t size) {
-  m_uniformBuffers.emplace(std::piecewise_construct,
-                           std::forward_as_tuple(binding),
-                           std::forward_as_tuple(m_context, size));
+  m_uniformBuffers.resize(k_maxFramesInFlight);
+  for (auto& bufferMap : m_uniformBuffers) {
+    auto [iter, inserted] = bufferMap.emplace(
+        std::piecewise_construct, std::forward_as_tuple(binding),
+        std::forward_as_tuple(m_context, size));
+    assert(inserted);
+  }
 }
 
 void Pipeline::createDescriptorPool() {
@@ -193,25 +197,30 @@ void Pipeline::createDescriptorSets() {
                                     m_descriptorSets.data()),
            "allocate descriptor sets");
 
+  std::vector<VkDescriptorBufferInfo> bufferInfos;
+  bufferInfos.reserve(k_maxFramesInFlight * m_uniformBuffers.size());
+  std::vector<VkWriteDescriptorSet> descriptorWrites;
+  VkBuffer b1;
   for (int i = 0; i < k_maxFramesInFlight; i++) {
-    auto descriptorWrites = spoony::utils::to_vector(
-        m_uniformBuffers | std::views::transform([this, i](const auto& item) {
-          const auto& [binding, buffer] = item;
-          VkDescriptorBufferInfo bufferInfo{
-              .buffer = buffer, .offset = 0, .range = buffer.getSize()};
-          return VkWriteDescriptorSet{
-              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-              .dstSet = m_descriptorSets[i],
-              .dstBinding = binding,
-              .dstArrayElement = 0,  // descriptors can be arrays
-              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-              .descriptorCount = 1,
-              .pBufferInfo = &bufferInfo};
-        }));
+    for (const auto& [binding, buffer] : m_uniformBuffers[i]) {
+      const auto& bufferInfo =
+          bufferInfos.emplace_back(buffer, 0, buffer.getSize());
+        
+      b1 = bufferInfo.buffer;
 
-    vkUpdateDescriptorSets(m_context.device(), descriptorWrites.size(),
-                           descriptorWrites.data(), 0, nullptr);
+      descriptorWrites.push_back(
+          {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+           .dstSet = m_descriptorSets[i],
+           .dstBinding = binding,
+           .dstArrayElement = 0,  // descriptors can be arrays
+           .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+           .descriptorCount = 1,
+           .pBufferInfo = &bufferInfo});
+    }
   }
+
+  vkUpdateDescriptorSets(m_context.device(), descriptorWrites.size(),
+                          descriptorWrites.data(), 0, nullptr);
 
   // TODO: texture sampler uniforms!!
 }
@@ -270,12 +279,13 @@ std::unique_ptr<Pipeline> PipelineBuilder::create() const {
 
   pipeline->createDescriptorSetLayout(layoutBindings);
   pipeline->createDescriptorPool();
-  pipeline->createDescriptorSets();
   pipeline->initialize(m_renderPass, m_vertexBindingDescription,
                        m_vertexAttributeDescriptions, m_shaderStages);
   for (auto [binding, size] : m_uniformSizes) {
     pipeline->createUniformBuffer(binding, size);
   }
+
+  pipeline->createDescriptorSets();
 
   return pipeline;
 }

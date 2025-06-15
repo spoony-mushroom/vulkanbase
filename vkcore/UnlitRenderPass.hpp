@@ -13,6 +13,7 @@ class UnlitRenderPass : public RenderPassModule {
   UnlitRenderPass(ContextHandle context,
                   const RenderPassConfig& renderPassConfig,
                   int maxFramesInFlight);
+  void bindFramebuffer(int framebufferIndex) override;
   void record(VkCommandBuffer cmdBuf, uint32_t imageIndex) override;
   void setOutputAttachments(std::span<const VkImageView> outputAttachments,
                             VkExtent2D extent);
@@ -29,6 +30,8 @@ class UnlitRenderPass : public RenderPassModule {
   std::unique_ptr<Texture> m_colorRenderTexture;
   std::unique_ptr<Texture> m_depthRenderTexture;
   std::set<std::shared_ptr<Mesh>> m_meshes;
+
+  Framebuffer* m_activeFramebuffer;
 
   void initPipeline();
   void initFramebuffers(std::span<const VkImageView> outputAttachments,

@@ -15,7 +15,7 @@ class Buffer {
   Buffer(Buffer&& other);
   
   void bindVertex(VkCommandBuffer cmdBuf);
-  void bindIndex(VkCommandBuffer cmdBuf);
+  void bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType);
   VkDeviceSize getSize() const { return m_size; };
   operator VkBuffer() const { return m_buffer; }
   Buffer& operator=(Buffer&& other);

@@ -82,6 +82,10 @@ void Renderer::initFrameContexts() {
   }
 }
 
+Renderer::~Renderer() {
+  m_context.get()->deviceWaitIdle();
+}
+
 void Renderer::registerCurrentThread() {
   auto threadId = std::this_thread::get_id();
   auto indices =
@@ -95,6 +99,8 @@ void Renderer::registerCurrentThread() {
 }
 
 void Renderer::drawFrame() {
+  // assert(m_frameContexts.size() > m_currentFrame);
+  // assert(m_frameContexts[m_currentFrame].inFlight != nullptr);
   m_frameContexts[m_currentFrame].inFlight.wait(
       std::numeric_limits<uint64_t>::max());
 
@@ -122,7 +128,8 @@ void Renderer::drawFrame() {
            "begin recording command buffer");
 
   for (auto& module : m_renderModules) {
-    module->record(cmdBuf, imageIndex);
+    module->bindFramebuffer(imageIndex);
+    module->record(cmdBuf, m_currentFrame);
   }
 
   VK_CHECK(vkEndCommandBuffer(cmdBuf), "record command buffer");

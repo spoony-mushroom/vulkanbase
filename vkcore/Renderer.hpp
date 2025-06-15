@@ -26,6 +26,7 @@ class Renderer {
  public:
   template <typename TWind>
   Renderer(TWind* window);
+  ~Renderer();
   void registerCurrentThread();
   void drawFrame();
 
@@ -49,7 +50,7 @@ class Renderer {
   std::mutex m_commandPoolMutex;
   std::map<std::thread::id, std::shared_ptr<CommandPool>> m_commandPools;
 
-  uint32_t m_currentFrame;
+  uint32_t m_currentFrame{0};
 
   std::vector<std::unique_ptr<RenderPassModule>> m_renderModules;
 

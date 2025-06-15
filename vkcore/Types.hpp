@@ -78,7 +78,9 @@ struct UniformBufferObject {
 };
 
 struct MeshData {
-  using IndexType = uint16_t;
+  using IndexType = uint32_t;
+  static constexpr VkIndexType k_indexType = VK_INDEX_TYPE_UINT32;
+
   std::vector<Vertex> vertices;
   std::vector<IndexType> indices;
 

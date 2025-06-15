@@ -6,6 +6,7 @@ namespace spoony::vkcore {
 class RenderPassModule {
  public:
   virtual ~RenderPassModule() = default;
+  virtual void bindFramebuffer(int framebufferIndex) {}
   virtual void record(VkCommandBuffer cmdBuf, uint32_t imageIndex) = 0;
 
   private:

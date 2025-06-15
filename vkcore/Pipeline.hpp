@@ -21,7 +21,9 @@ class Pipeline {
 
   template <typename T>
   void updateUniform(uint32_t bindingIdx, const T& data) {
-    m_uniformBuffers[bindingIdx].data<T>() = data;
+    for (auto& bufferMap : m_uniformBuffers) {
+      bufferMap[bindingIdx].data<T>() = data;
+    }
   }
 
  private:
@@ -33,7 +35,7 @@ class Pipeline {
   VkDescriptorSetLayout m_descriptorSetLayout;
   VkDescriptorPool m_descriptorPool;
   std::vector<VkDescriptorSet> m_descriptorSets;
-  std::map<uint32_t, MappedUniformBuffer> m_uniformBuffers;
+  std::vector<std::map<uint32_t, MappedUniformBuffer>> m_uniformBuffers;
 
   void createDescriptorSetLayout(
       std::span<const VkDescriptorSetLayoutBinding> bindings);

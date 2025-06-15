@@ -22,7 +22,7 @@ spoony::vkcore::Mesh::Mesh(const MeshData& data, const Renderer& renderer)
 
 void spoony::vkcore::Mesh::draw(VkCommandBuffer cmdBuf) {
     m_vertexBuffer.bindVertex(cmdBuf);
-    m_indexBuffer.bindIndex(cmdBuf);
+    m_indexBuffer.bindIndex(cmdBuf, MeshData::k_indexType);
     auto numIndices = m_indexBuffer.getSize() / sizeof(MeshData::IndexType);
     vkCmdDrawIndexed(cmdBuf, numIndices, 1, 0, 0, 0);
 }

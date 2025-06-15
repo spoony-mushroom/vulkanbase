@@ -55,6 +55,7 @@ class ContextHandle {
   void initialize(VkSurfaceKHR surface) { m_context->initialize(surface); }
   VkInstance instance() const { return m_context->getInstance(); }
   VkDevice device() const { return m_context->getDevice(); }
+  
   VkPhysicalDevice physicalDevice() const {
     return m_context->getPhysicalDevice();
   }
