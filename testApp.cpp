@@ -32,9 +32,11 @@ class TestApp {
   void mainLoop() {
     m_renderer->registerCurrentThread();
     initMeshes();
+    int frameNumber = 0;
     while (!glfwWindowShouldClose(m_window)) {
       glfwPollEvents();
       m_renderer->drawFrame();
+      // std::cout << count++ << std::endl;
     }
   }
 
@@ -98,6 +100,7 @@ class TestApp {
   }
 };
 
+#if 0
 int main() {
   try {
     TestApp app;
@@ -111,3 +114,4 @@ int main() {
 
   return EXIT_SUCCESS;
 }
+#endif
