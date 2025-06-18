@@ -35,6 +35,7 @@ class TestApp {
     int frameNumber = 0;
     while (!glfwWindowShouldClose(m_window)) {
       glfwPollEvents();
+      updateCamera();
       m_renderer->drawFrame();
       // std::cout << count++ << std::endl;
     }
@@ -100,7 +101,7 @@ class TestApp {
   }
 };
 
-#if 0
+#if 1
 int main() {
   try {
     TestApp app;

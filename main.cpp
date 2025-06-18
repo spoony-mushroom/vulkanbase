@@ -863,7 +863,9 @@ class HelloTriangleApplication {
 
     mipLevels = computeMipLevels(texWidth, texHeight);
 
-    VkDeviceSize imageSize = texWidth * texHeight * texChannels * 4;
+    // Ignore texChannels; STBI_rgb_alpha specifies that each pixel
+    // should be 4 bytes
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1871,7 +1873,7 @@ class HelloTriangleApplication {
   }
 };
 
-#if 1
+#if 0
 int main() {
   HelloTriangleApplication app;
 
