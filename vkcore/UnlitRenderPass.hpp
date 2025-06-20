@@ -13,10 +13,10 @@ class UnlitRenderPass : public RenderPassModule {
   UnlitRenderPass(ContextHandle context,
                   const RenderPassConfig& renderPassConfig,
                   int maxFramesInFlight);
-  void bindFramebuffer(int framebufferIndex) override;
+  void selectOutput(int framebufferIndex) override;
   void record(VkCommandBuffer cmdBuf, uint32_t imageIndex) override;
   void setOutputAttachments(std::span<const VkImageView> outputAttachments,
-                            VkExtent2D extent);
+                            VkExtent2D extent) override;
 
   void setModelViewProjection(glm::mat4 model, glm::mat4 view, glm::mat4 proj);
   void addMesh(std::shared_ptr<Mesh> mesh);

@@ -29,6 +29,7 @@ class Renderer {
   ~Renderer();
   void registerCurrentThread();
   void drawFrame();
+  void refreshSwapChain();
 
   template <typename T>
     requires std::derived_from<T, RenderPassModule>

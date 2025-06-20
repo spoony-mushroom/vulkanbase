@@ -22,22 +22,38 @@ class TestApp {
     m_window = glfwCreateWindow(WIDTH, HEIGHT, "Hello World", nullptr, nullptr);
 
     glfwSetWindowUserPointer(m_window, this);
+    glfwSetFramebufferSizeCallback(m_window, frameBufferSizeCallback);
   };
 
   void initGraphics() {
     m_renderer = std::make_unique<vkcore::Renderer>(m_window);
     m_renderPass = &m_renderer->addRenderPassModule<vkcore::UnlitRenderPass>();
+    m_renderer->registerCurrentThread();
+    initMeshes();
   }
 
   void mainLoop() {
-    m_renderer->registerCurrentThread();
-    initMeshes();
     int frameNumber = 0;
     while (!glfwWindowShouldClose(m_window)) {
       glfwPollEvents();
       updateCamera();
+      if (m_windowResized) {
+        waitForWindowVisible();
+        m_renderer->refreshSwapChain();
+        m_windowResized = false;
+      }
       m_renderer->drawFrame();
       // std::cout << count++ << std::endl;
+    }
+  }
+
+  void waitForWindowVisible() {
+    int width = 0, height = 0;
+    glfwGetWindowSize(m_window, &width, &height);
+    // loop if the window is minimized
+    while (width == 0 || height == 0) {
+      glfwWaitEvents();  // sleep until something happens
+      glfwGetWindowSize(m_window, &width, &height);
     }
   }
 
@@ -50,29 +66,34 @@ class TestApp {
   vkcore::UnlitRenderPass* m_renderPass;
 
   std::shared_ptr<vkcore::Mesh> m_mesh;
+  bool m_windowResized{false};
 
-  static void frameBufferResizeCallback(GLFWwindow* window,
-                                        int width,
-                                        int height) {
-    throw std::runtime_error("Not implemented yet");
+  static void frameBufferSizeCallback(GLFWwindow* window,
+                                      int width,
+                                      int height) {
+    void* userPtr = glfwGetWindowUserPointer(window);
+    TestApp* app = reinterpret_cast<TestApp*>(userPtr);
+    app->m_windowResized = true;
   }
 
   void initMeshes() {
     static const vkcore::MeshData meshData{
-      .vertices = {
-        {.pos{-0.5f, -0.5f, 0.f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
-        {.pos{0.5f, -0.5f, 0.f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
-        {.pos{0.5f, 0.5f, 0.f}, .color{0, 0, 1.f}, .texCoord{1.f, 0}},
-        {.pos{-0.5f, 0.5f, 0.f}, .color{1.f, 1.f, 1.f}, .texCoord{0, 0}},
+        .vertices =
+            {{.pos{-0.5f, -0.5f, 0.f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
+             {.pos{0.5f, -0.5f, 0.f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
+             {.pos{0.5f, 0.5f, 0.f}, .color{0, 0, 1.f}, .texCoord{1.f, 0}},
+             {.pos{-0.5f, 0.5f, 0.f}, .color{1.f, 1.f, 1.f}, .texCoord{0, 0}},
 
-        {.pos{-0.5f, -0.5f, -0.5f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
-        {.pos{0.5f, -0.5f, -0.5f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
-        {.pos{0.5f, 0.5f, -0.5f}, .color{0, 0, 1.f}, .texCoord{1.f, 0}},
-        {.pos{-0.5f, 0.5f, -0.5f}, .color{1.f, 1.f, 1.f}, .texCoord{0, 0}}},
-        .indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4}
-    };
+             {.pos{-0.5f, -0.5f, -0.5f}, .color{1.f, 0, 0}, .texCoord{0, 1.f}},
+             {.pos{0.5f, -0.5f, -0.5f}, .color{0, 1.f, 0}, .texCoord{1.f, 1.f}},
+             {.pos{0.5f, 0.5f, -0.5f}, .color{0, 0, 1.f}, .texCoord{1.f, 0}},
+             {.pos{-0.5f, 0.5f, -0.5f},
+              .color{1.f, 1.f, 1.f},
+              .texCoord{0, 0}}},
+        .indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4}};
 
-    m_renderPass->addMesh(std::make_shared<vkcore::Mesh>(meshData, *m_renderer));
+    m_renderPass->addMesh(
+        std::make_shared<vkcore::Mesh>(meshData, *m_renderer));
   }
 
   void updateCamera() {

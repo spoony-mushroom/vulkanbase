@@ -67,7 +67,6 @@ Renderer::Renderer(GLFWwindow* window) : Renderer() {
   m_surface =
       std::make_unique<WindowSurfaceImpl<GLFWwindow>>(m_context, window);
   init();
-  // initFrameBuffers();
   initFrameContexts();
 }
 
@@ -128,7 +127,7 @@ void Renderer::drawFrame() {
            "begin recording command buffer");
 
   for (auto& module : m_renderModules) {
-    module->bindFramebuffer(imageIndex);
+    module->selectOutput(imageIndex);
     module->record(cmdBuf, m_currentFrame);
   }
 
@@ -176,6 +175,16 @@ void Renderer::drawFrame() {
   }
 
   m_currentFrame = (m_currentFrame + 1) % k_maxFramesInFlight;
+}
+
+void Renderer::refreshSwapChain() {
+  m_context.get()->deviceWaitIdle();
+  m_swapChain.reset();
+  m_swapChain = std::make_unique<Swapchain>(m_context, *m_surface);
+  for (auto& renderModule : m_renderModules) {
+    renderModule->setOutputAttachments(m_swapChain->getImageViews(),
+                                       m_swapChain->getExtent());
+  }
 }
 
 VkExtent2D Renderer::getExtent() const {

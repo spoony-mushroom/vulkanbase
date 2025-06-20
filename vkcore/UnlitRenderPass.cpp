@@ -18,12 +18,11 @@ UnlitRenderPass::UnlitRenderPass(ContextHandle context,
   initPipeline();
 }
 
-void UnlitRenderPass::bindFramebuffer(int framebufferIndex) {
+void UnlitRenderPass::selectOutput(int framebufferIndex) {
   m_activeFramebuffer = &m_framebuffers[framebufferIndex];
 }
 
 void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
-  // const auto& framebuffer = m_framebuffers[imageIndex];
   assert(m_activeFramebuffer != nullptr);
   auto renderScope = m_renderPass.createScope(cmdBuf, *m_activeFramebuffer,
                                               m_activeFramebuffer->getExtent());
@@ -83,6 +82,7 @@ void UnlitRenderPass::initFramebuffers(
   textureConfig.aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
   m_depthRenderTexture = std::make_unique<Texture>(m_context, textureConfig);
 
+  m_framebuffers.clear();
   m_framebuffers.reserve(outputAttachments.size());
   for (const auto& outputAttachment : outputAttachments) {
     std::array attachments{m_colorRenderTexture->getImageView(),

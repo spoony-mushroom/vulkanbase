@@ -6,10 +6,13 @@ namespace spoony::vkcore {
 class RenderPassModule {
  public:
   virtual ~RenderPassModule() = default;
-  virtual void bindFramebuffer(int framebufferIndex) {}
+  virtual void setOutputAttachments(
+      std::span<const VkImageView> outputAttachments,
+      VkExtent2D extent) {}
+  virtual void selectOutput(int outputIndex) {}
   virtual void record(VkCommandBuffer cmdBuf, uint32_t imageIndex) = 0;
 
-  private:
+ private:
   VkExtent2D m_extents;
 };
 }  // namespace spoony::vkcore
