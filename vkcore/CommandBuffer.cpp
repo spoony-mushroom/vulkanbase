@@ -19,27 +19,26 @@ CommandPool::~CommandPool() {
 
 CommandBuffer CommandPool::acquire(bool reset) {
   VkCommandBuffer cmdBuf{VK_NULL_HANDLE};
-  if (m_availableBuffers.empty()) {
-    VkCommandBufferAllocateInfo allocInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = m_pool,
-        .commandBufferCount = 1,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY};
+  VkCommandBufferAllocateInfo allocInfo{
+      .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+      .commandPool = m_pool,
+      .commandBufferCount = 1,
+      .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY};
 
-    VK_CHECK(vkAllocateCommandBuffers(m_context.device(), &allocInfo, &cmdBuf),
-             "allocate command buffer");
-  } else {
-    cmdBuf = m_availableBuffers.back();
-    m_availableBuffers.pop_back();
-    if (reset) {
-        vkResetCommandBuffer(cmdBuf, 0);
-    }
-  }
+  VK_CHECK(vkAllocateCommandBuffers(m_context.device(), &allocInfo, &cmdBuf),
+           "allocate command buffer");
   return {cmdBuf, shared_from_this()};
 }
 
 void CommandPool::recycle(VkCommandBuffer cmdBuf) {
-  m_availableBuffers.push_back(cmdBuf);
+  vkFreeCommandBuffers(m_context.device(), m_pool, 1, &cmdBuf);
+}
+
+CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept {
+  m_commandBuffer = other.m_commandBuffer;
+  m_pool = std::move(other.m_pool);
+
+  other.m_commandBuffer = VK_NULL_HANDLE;
 }
 
 CommandBuffer::~CommandBuffer() {

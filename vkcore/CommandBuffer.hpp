@@ -7,16 +7,11 @@ class CommandPool;
 
 class CommandBuffer {
  public:
-  CommandBuffer() = default;
+  CommandBuffer() = delete;
   CommandBuffer(VkCommandBuffer cmdBuf, std::shared_ptr<CommandPool> pool)
       : m_commandBuffer(cmdBuf), m_pool(pool) {}
   CommandBuffer(const CommandBuffer&) = delete;
-  CommandBuffer(CommandBuffer&& other) noexcept{
-    m_commandBuffer = other.m_commandBuffer;
-    m_pool = std::move(other.m_pool);
-
-    other.m_commandBuffer = VK_NULL_HANDLE;    
-  }
+  CommandBuffer(CommandBuffer&& other) noexcept;
   ~CommandBuffer();
 
   const VkCommandBuffer& get() const noexcept { return m_commandBuffer; }
@@ -38,7 +33,6 @@ class CommandPool final : public std::enable_shared_from_this<CommandPool> {
  private:
   VkCommandPool m_pool;
   ContextHandle m_context;
-  std::vector<VkCommandBuffer> m_availableBuffers;
 };
 
 }  // namespace spoony::vkcore

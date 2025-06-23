@@ -13,7 +13,6 @@
 namespace spoony::vkcore {
 
 struct FrameContext {
-  CommandBuffer cmdBuf;
   Semaphore imageAvailable;
   Semaphore renderFinished;
   Fence inFlight;
