@@ -87,13 +87,13 @@ Renderer::~Renderer() {
 
 void Renderer::registerCurrentThread() {
   auto threadId = std::this_thread::get_id();
-  auto indices =
-      utils::findQueueFamilies(m_context.physicalDevice(), *m_surface);
+  auto graphicsFamilyIndex =
+      m_context.get()->getQueueFamilyIndices().graphicsFamily;
 
   std::unique_lock lck(m_commandPoolMutex);
   if (auto itr = m_commandPools.find(threadId); itr == m_commandPools.end()) {
-    m_commandPools[threadId] = std::make_shared<CommandPool>(
-        m_context, indices.graphicsFamily.value());
+    m_commandPools[threadId] =
+        std::make_shared<CommandPool>(m_context, graphicsFamilyIndex);
   }
 }
 

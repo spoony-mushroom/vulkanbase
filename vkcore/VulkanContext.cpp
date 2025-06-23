@@ -148,10 +148,10 @@ void VulkanContext::createLogicalDevice(VkSurfaceKHR surface) {
   VkPhysicalDeviceFeatures deviceFeatures{.samplerAnisotropy = VK_TRUE};
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-  auto indices = findQueueFamilies(m_physicalDevice, surface);
+  m_queueFamilyIndices = findQueueFamilies(m_physicalDevice, surface);
   std::set<uint32_t> uniqueQueueFamilies{
-      indices.graphicsFamily.value(),
-      indices.presentFamily.value()};
+      m_queueFamilyIndices.graphicsFamily.value(),
+      m_queueFamilyIndices.presentFamily.value()};
   float queuePriority = 1.f;
   for (auto queueFamily : uniqueQueueFamilies) {
     VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -179,9 +179,9 @@ void VulkanContext::createLogicalDevice(VkSurfaceKHR surface) {
     throw std::runtime_error("Unable to create logical device");
   }
 
-  vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0,
+  vkGetDeviceQueue(m_device, m_queueFamilyIndices.graphicsFamily.value(), 0,
                    &m_graphicsQueue);
-  vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0,
+  vkGetDeviceQueue(m_device, m_queueFamilyIndices.presentFamily.value(), 0,
                    &m_presentQueue);
 }
 }  // namespace spoony::vkcore

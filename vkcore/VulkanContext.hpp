@@ -26,6 +26,9 @@ class VulkanContext final {
 
   VkSampleCountFlagBits getMaxSampleCount() const;
   void deviceWaitIdle() const { vkDeviceWaitIdle(m_device); };
+  const utils::QueueFamilyIndices& getQueueFamilyIndices() const {
+    return m_queueFamilyIndices;
+  }
 
  private:
   friend class VulkanContextBuilder;
@@ -34,6 +37,7 @@ class VulkanContext final {
   VkPhysicalDevice m_physicalDevice{VK_NULL_HANDLE};
   VkDevice m_device{VK_NULL_HANDLE};
 
+  utils::QueueFamilyIndices m_queueFamilyIndices;
   VkQueue m_graphicsQueue;
   VkQueue m_presentQueue;
 
@@ -55,7 +59,7 @@ class ContextHandle {
   void initialize(VkSurfaceKHR surface) { m_context->initialize(surface); }
   VkInstance instance() const { return m_context->getInstance(); }
   VkDevice device() const { return m_context->getDevice(); }
-  
+
   VkPhysicalDevice physicalDevice() const {
     return m_context->getPhysicalDevice();
   }

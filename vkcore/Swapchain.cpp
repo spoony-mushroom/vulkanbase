@@ -93,7 +93,7 @@ void Swapchain::createSwapChain(const WindowSurface& surface) {
       .imageArrayLayers = 1,
       .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
 
-  auto indices = findQueueFamilies(m_context.physicalDevice(), surface);
+  auto indices = m_context.get()->getQueueFamilyIndices();
   uint32_t queueFamilyIndices[]{indices.graphicsFamily.value(),
                                 indices.presentFamily.value()};
   if (indices.graphicsFamily != indices.presentFamily) {
