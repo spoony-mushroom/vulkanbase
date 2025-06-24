@@ -1,5 +1,4 @@
 #pragma once
-#include "CommandBuffer.hpp"
 #include "Framebuffer.hpp"
 #include "Pipeline.hpp"
 #include "RenderPass.hpp"
@@ -26,7 +25,6 @@ class Renderer {
   template <typename TWind>
   Renderer(TWind* window);
   ~Renderer();
-  void registerCurrentThread();
   void drawFrame();
   void refreshSwapChain();
 
@@ -36,6 +34,7 @@ class Renderer {
 
   VkExtent2D getExtent() const;
   void copyBuffer(const Buffer& src, Buffer& dst) const;
+  void copyTexture(const Texture& src, Texture dst) const;
   ContextHandle getContext() const { return m_context; }
 
  private:
@@ -47,9 +46,6 @@ class Renderer {
 
   std::vector<FrameContext> m_frameContexts;
 
-  std::mutex m_commandPoolMutex;
-  std::map<std::thread::id, std::shared_ptr<CommandPool>> m_commandPools;
-
   uint32_t m_currentFrame{0};
 
   std::vector<std::unique_ptr<RenderPassModule>> m_renderModules;
@@ -57,7 +53,5 @@ class Renderer {
   Renderer();
   void init();
   void initFrameContexts();
-  std::shared_ptr<CommandPool> getCommandPool() const;
-  CommandBuffer getCommandBuffer(bool reset = true) const;
 };
 }  // namespace spoony::vkcore

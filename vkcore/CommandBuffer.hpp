@@ -3,36 +3,55 @@
 #include "VulkanContext.hpp"
 
 namespace spoony::vkcore {
-class CommandPool;
 
 class CommandBuffer {
  public:
   CommandBuffer() = delete;
-  CommandBuffer(VkCommandBuffer cmdBuf, std::shared_ptr<CommandPool> pool)
-      : m_commandBuffer(cmdBuf), m_pool(pool) {}
   CommandBuffer(const CommandBuffer&) = delete;
   CommandBuffer(CommandBuffer&& other) noexcept;
   ~CommandBuffer();
+
+  static CommandBuffer acquire(ContextHandle context);
 
   const VkCommandBuffer& get() const noexcept { return m_commandBuffer; }
   operator VkCommandBuffer() const noexcept { return get(); }
   CommandBuffer& operator=(const CommandBuffer&) = delete;
 
  private:
+  friend class CommandPool;
+  CommandBuffer(VkCommandBuffer cmdBuf, std::shared_ptr<class CommandPool> pool)
+      : m_commandBuffer(cmdBuf), m_pool(pool) {}
   VkCommandBuffer m_commandBuffer{VK_NULL_HANDLE};
   std::weak_ptr<CommandPool> m_pool;
 };
 
-class CommandPool final : public std::enable_shared_from_this<CommandPool> {
+class AutoSubmitCommandBuffer {
  public:
-  CommandPool(ContextHandle context, uint32_t queue);
-  ~CommandPool();
-  CommandBuffer acquire(bool reset = true);
-  void recycle(VkCommandBuffer cmdBuf);
+  AutoSubmitCommandBuffer(CommandBuffer cmdBuffer, VkQueue queue)
+      : commandBuffer(std::move(cmdBuffer)), queue(queue) {
+    VkCommandBufferBeginInfo beingInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+
+    vkBeginCommandBuffer(commandBuffer, &beingInfo);
+  }
+
+  ~AutoSubmitCommandBuffer() {
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                            .commandBufferCount = 1,
+                            .pCommandBuffers = &commandBuffer.get()};
+
+    vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(queue);
+  }
+
+  operator VkCommandBuffer() const noexcept { return commandBuffer; }
 
  private:
-  VkCommandPool m_pool;
-  ContextHandle m_context;
+  CommandBuffer commandBuffer;
+  VkQueue queue;
 };
 
 }  // namespace spoony::vkcore

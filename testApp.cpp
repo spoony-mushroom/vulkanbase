@@ -28,7 +28,6 @@ class TestApp {
   void initGraphics() {
     m_renderer = std::make_unique<vkcore::Renderer>(m_window);
     m_renderPass = &m_renderer->addRenderPassModule<vkcore::UnlitRenderPass>();
-    m_renderer->registerCurrentThread();
     initMeshes();
   }
 

@@ -13,35 +13,6 @@
 namespace spoony::vkcore {
 using namespace spoony::utils;
 
-class AutoSubmitCommandBuffer {
- public:
-  AutoSubmitCommandBuffer(CommandBuffer cmdBuffer, VkQueue queue)
-      : commandBuffer(std::move(cmdBuffer)), queue(queue) {
-    VkCommandBufferBeginInfo beingInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
-
-    vkBeginCommandBuffer(commandBuffer, &beingInfo);
-  }
-
-  ~AutoSubmitCommandBuffer() {
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                            .commandBufferCount = 1,
-                            .pCommandBuffers = &commandBuffer.get()};
-
-    vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(queue);
-  }
-
-  operator VkCommandBuffer() const noexcept { return commandBuffer; }
-
- private:
-  CommandBuffer commandBuffer;
-  VkQueue queue;
-};
-
 static ContextHandle makeContext() {
   uint32_t glfwExtensionCount;
   auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -85,18 +56,6 @@ Renderer::~Renderer() {
   m_context.get()->deviceWaitIdle();
 }
 
-void Renderer::registerCurrentThread() {
-  auto threadId = std::this_thread::get_id();
-  auto graphicsFamilyIndex =
-      m_context.get()->getQueueFamilyIndices().graphicsFamily;
-
-  std::unique_lock lck(m_commandPoolMutex);
-  if (auto itr = m_commandPools.find(threadId); itr == m_commandPools.end()) {
-    m_commandPools[threadId] =
-        std::make_shared<CommandPool>(m_context, graphicsFamilyIndex);
-  }
-}
-
 void Renderer::drawFrame() {
   // assert(m_frameContexts.size() > m_currentFrame);
   // assert(m_frameContexts[m_currentFrame].inFlight != nullptr);
@@ -121,7 +80,7 @@ void Renderer::drawFrame() {
   static constexpr VkCommandBufferBeginInfo beginInfo{
       .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 
-  auto cmdBuf = getCommandBuffer();
+  auto cmdBuf = CommandBuffer::acquire(m_context);
 
   VK_CHECK(vkBeginCommandBuffer(cmdBuf, &beginInfo),
            "begin recording command buffer");
@@ -192,25 +151,10 @@ VkExtent2D Renderer::getExtent() const {
 }
 
 void Renderer::copyBuffer(const Buffer& src, Buffer& dst) const {
-  auto scope = AutoSubmitCommandBuffer(getCommandBuffer(),
+  auto scope = AutoSubmitCommandBuffer(CommandBuffer::acquire(m_context),
                                        m_context.get()->getGraphicsQueue());
   VkBufferCopy copyRegion{.size = src.getSize()};
   vkCmdCopyBuffer(scope, src, dst, 1, &copyRegion);
-}
-
-std::shared_ptr<CommandPool> Renderer::getCommandPool() const {
-  auto id = std::this_thread::get_id();
-  auto itr = m_commandPools.find(id);
-  if (itr == m_commandPools.end()) {
-    throw std::runtime_error(
-        "Unable to get a command pool. Did you call registerCurrentThread()?");
-  }
-  return itr->second;
-}
-
-CommandBuffer Renderer::getCommandBuffer(bool reset) const {
-  auto pool = getCommandPool();
-  return pool->acquire(reset);
 }
 
 template <>
