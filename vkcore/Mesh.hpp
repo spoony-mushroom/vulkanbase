@@ -1,12 +1,11 @@
 #pragma once
 
 #include "Buffer.hpp"
-#include "Renderer.hpp"
 
 namespace spoony::vkcore {
 class Mesh {
  public:
-  Mesh(const MeshData& data, const Renderer& renderer);
+  Mesh(ContextHandle context, const MeshData& data);
   void draw(VkCommandBuffer cmdBuf);
 
  private:

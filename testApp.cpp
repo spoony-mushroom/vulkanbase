@@ -92,7 +92,7 @@ class TestApp {
         .indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4}};
 
     m_renderPass->addMesh(
-        std::make_shared<vkcore::Mesh>(meshData, *m_renderer));
+        std::make_shared<vkcore::Mesh>(m_renderer->getContext(), meshData));
   }
 
   void updateCamera() {

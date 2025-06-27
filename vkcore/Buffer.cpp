@@ -1,5 +1,6 @@
 #include "Buffer.hpp"
 
+#include "CommandBuffer.hpp"
 #include "Utils.hpp"
 #include "VulkanUtils.hpp"
 
@@ -86,6 +87,14 @@ void Buffer::bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType) {
   vkCmdBindIndexBuffer(cmdBuf, m_buffer, 0, indexType);
 }
 
+void Buffer::copyFrom(const Buffer& src) {
+  auto scope = AutoSubmitCommandBuffer(CommandBuffer::acquire(m_context),
+                                       m_context.get()->getGraphicsQueue());
+
+  VkBufferCopy copyRegion{.size = src.getSize()};
+  vkCmdCopyBuffer(scope, src, m_buffer, 1, &copyRegion);
+}
+
 void Buffer::reset() {
   if (m_buffer == VK_NULL_HANDLE) {
     return;
@@ -97,6 +106,16 @@ void Buffer::reset() {
 
 Buffer::~Buffer() {
   reset();
+}
+
+MappedUniformBuffer::MappedUniformBuffer(ContextHandle context,
+                                         size_t bufferSize)
+    : Buffer(context,
+             static_cast<VkDeviceSize>(bufferSize),
+             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+  vkMapMemory(getDevice(), getMemory(), 0, getSize(), 0, &m_mappedData);
 }
 
 }  // namespace spoony::vkcore

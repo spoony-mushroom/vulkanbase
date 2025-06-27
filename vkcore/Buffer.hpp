@@ -1,8 +1,20 @@
 #pragma once
 
 #include "Types.hpp"
+#include "Utils.hpp"
 #include "VulkanContext.hpp"
+
+using namespace spoony::utils;
+
 namespace spoony::vkcore {
+
+inline VkBufferUsageFlags getExtraUsageFlags(VkMemoryPropertyFlags propertyFlags) {
+  if (hasFlags(propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+    return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+  }
+
+  return 0;
+}
 
 class Buffer {
  public:
@@ -12,20 +24,52 @@ class Buffer {
       VkDeviceSize size,
       VkBufferUsageFlags usage,
       VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  Buffer(ContextHandle context,
+         ContiguousSizedRange auto&& srcData,
+         VkBufferUsageFlags usage,
+         VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+      : Buffer(context,
+               sizeInBytes(srcData),
+               usage | getExtraUsageFlags(properties),
+               properties) {
+    if (hasFlags(properties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+      // The buffer we are creating is not visible to the host
+      // We need to upload the data via a staging buffer
+      Buffer stagingBuffer(context, getSize(), VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+      stagingBuffer.copyHostData(srcData);
+      // Perform a transfer
+      copyFrom(stagingBuffer);
+    } else {
+      copyHostData(srcData);
+    }
+  }
   Buffer(Buffer&& other);
-  
+  virtual ~Buffer();
+
   void bindVertex(VkCommandBuffer cmdBuf);
   void bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType);
   VkDeviceSize getSize() const { return m_size; };
+  void copyFrom(const Buffer& src);
+
   operator VkBuffer() const { return m_buffer; }
   Buffer& operator=(Buffer&& other);
-
-  virtual ~Buffer();
 
  protected:
   VkDevice getDevice() const { return m_context.device(); };
   VkDeviceMemory getMemory() const { return m_bufferMemory; };
   void reset();
+
+  void copyHostData(ContiguousSizedRange auto&& srcData) {
+    assert(getSize() >= sizeInBytes(srcData));
+    void* data;  // host (CPU) memory that is mapped to the buffer
+    vkMapMemory(getDevice(), getMemory(), 0, getSize(), 0, &data);
+    // copy the data
+    memcpy(data, srcData.data(), getSize());
+    vkUnmapMemory(getDevice(), getMemory());
+  }
 
  private:
   ContextHandle m_context;
@@ -34,41 +78,10 @@ class Buffer {
   VkDeviceMemory m_bufferMemory;
 };
 
-class HostVisibleBuffer : public Buffer {
- public:
-  HostVisibleBuffer() = default;
-  HostVisibleBuffer(ContextHandle context,
-                    VkDeviceSize size,
-                    VkBufferUsageFlags usage)
-      : Buffer(context,
-               size,
-               usage,
-               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {};
-
-  HostVisibleBuffer(ContextHandle context,
-                    std::ranges::contiguous_range auto&& srcData,
-                    VkBufferUsageFlags usage)
-      : HostVisibleBuffer(context,
-                          sizeof(srcData.back()) * srcData.size(),
-                          usage) {
-    void* data;  // host (CPU) memory that is mapped to the buffer
-    vkMapMemory(getDevice(), getMemory(), 0, getSize(), 0, &data);
-    // copy the data
-    memcpy(data, srcData.data(), getSize());
-    vkUnmapMemory(getDevice(), getMemory());
-  }
-};
-
-class MappedUniformBuffer : public HostVisibleBuffer {
+class MappedUniformBuffer : public Buffer {
  public:
   MappedUniformBuffer() = default;
-  MappedUniformBuffer(ContextHandle context, size_t bufferSize)
-      : HostVisibleBuffer(context,
-                          static_cast<VkDeviceSize>(bufferSize),
-                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
-    vkMapMemory(getDevice(), getMemory(), 0, getSize(), 0, &m_mappedData);
-  }
+  MappedUniformBuffer(ContextHandle context, size_t bufferSize);
 
   template <Blittable T>
   T& data() const {
@@ -80,5 +93,4 @@ class MappedUniformBuffer : public HostVisibleBuffer {
   void* m_mappedData;
 };
 
-class VertexBuffer : public Buffer {};
 }  // namespace spoony::vkcore

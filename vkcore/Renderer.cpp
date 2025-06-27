@@ -150,13 +150,6 @@ VkExtent2D Renderer::getExtent() const {
   return m_swapChain->getExtent();
 }
 
-void Renderer::copyBuffer(const Buffer& src, Buffer& dst) const {
-  auto scope = AutoSubmitCommandBuffer(CommandBuffer::acquire(m_context),
-                                       m_context.get()->getGraphicsQueue());
-  VkBufferCopy copyRegion{.size = src.getSize()};
-  vkCmdCopyBuffer(scope, src, dst, 1, &copyRegion);
-}
-
 template <>
 UnlitRenderPass& Renderer::addRenderPassModule<UnlitRenderPass>() {
   RenderPassConfig config{

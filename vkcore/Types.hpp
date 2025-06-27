@@ -19,6 +19,16 @@ concept ContiguousRangeOf =
     std::ranges::contiguous_range<R> &&
     std::same_as<std::remove_cvref_t<std::ranges::range_value_t<R>>, T>;
 
+template<typename R>
+concept ContiguousSizedRange =
+    std::ranges::contiguous_range<R> &&
+    std::ranges::sized_range<R>;
+
+template <ContiguousSizedRange R>
+size_t sizeInBytes(R&& range){
+  return std::ranges::size(range) * sizeof(std::ranges::range_value_t<R>);
+}
+
 template <typename T>
 concept HasBindingDescriptions =
     requires(std::vector<VkVertexInputAttributeDescription> vec) {
@@ -85,10 +95,10 @@ struct MeshData {
   std::vector<IndexType> indices;
 
   size_t getVertexBufferSizeBytes() const {
-    return vertices.size() * sizeof(vertices.front());
+    return sizeInBytes(vertices);
   }
   size_t getIndexBufferSizeBytes() const {
-    return indices.size() * sizeof(indices.front());
+    return sizeInBytes(indices);
   }
 };
 

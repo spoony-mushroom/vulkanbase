@@ -33,8 +33,6 @@ class Renderer {
   T& addRenderPassModule();
 
   VkExtent2D getExtent() const;
-  void copyBuffer(const Buffer& src, Buffer& dst) const;
-  void copyTexture(const Texture& src, Texture dst) const;
   ContextHandle getContext() const { return m_context; }
 
  private:
