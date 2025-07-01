@@ -36,6 +36,10 @@ class AutoSubmitCommandBuffer {
     vkBeginCommandBuffer(commandBuffer, &beingInfo);
   }
 
+  AutoSubmitCommandBuffer(ContextHandle context)
+      : AutoSubmitCommandBuffer(CommandBuffer::acquire(context),
+                                context.get()->getGraphicsQueue()) {}
+
   ~AutoSubmitCommandBuffer() {
     vkEndCommandBuffer(commandBuffer);
 

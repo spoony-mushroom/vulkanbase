@@ -4,8 +4,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "vkcore/Mesh.hpp"
 #include "vkcore/Renderer.hpp"
+#include "vkcore/Texture.hpp"
 #include "vkcore/Types.hpp"
 #include "vkcore/UnlitRenderPass.hpp"
 using namespace spoony;
@@ -64,7 +68,8 @@ class TestApp {
   std::unique_ptr<vkcore::Renderer> m_renderer;
   vkcore::UnlitRenderPass* m_renderPass;
 
-  std::shared_ptr<vkcore::Mesh> m_mesh;
+  // std::shared_ptr<vkcore::Mesh> m_mesh;
+  std::unique_ptr<vkcore::Texture> m_texture;
   bool m_windowResized{false};
 
   static void frameBufferSizeCallback(GLFWwindow* window,
@@ -93,6 +98,21 @@ class TestApp {
 
     m_renderPass->addMesh(
         std::make_shared<vkcore::Mesh>(m_renderer->getContext(), meshData));
+
+    static constexpr char TEXTURE_PATH[]{"resources/viking_room.png"};
+    int texWidth, texHeight, texChannels;
+    std::unique_ptr<stbi_uc, decltype(&stbi_image_free)> pixels(
+        stbi_load(TEXTURE_PATH, &texWidth, &texHeight, &texChannels,
+                  STBI_rgb_alpha),
+        stbi_image_free);
+
+    if (!pixels) {
+      throw std::runtime_error("failed to load texture image!");
+    }
+
+    m_texture = std::make_unique<vkcore::Texture>(
+        m_renderer->getContext(), texWidth, texHeight,
+        std::span(pixels.get(), texWidth * texHeight * 4), vkcore::PixelFormat::RGBA);
   }
 
   void updateCamera() {

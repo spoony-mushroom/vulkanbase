@@ -88,8 +88,7 @@ void Buffer::bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType) {
 }
 
 void Buffer::copyFrom(const Buffer& src) {
-  auto scope = AutoSubmitCommandBuffer(CommandBuffer::acquire(m_context),
-                                       m_context.get()->getGraphicsQueue());
+  auto scope = AutoSubmitCommandBuffer(m_context);
 
   VkBufferCopy copyRegion{.size = src.getSize()};
   vkCmdCopyBuffer(scope, src, m_buffer, 1, &copyRegion);
