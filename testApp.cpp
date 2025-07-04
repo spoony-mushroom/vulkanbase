@@ -50,7 +50,7 @@ class TestApp {
     }
   }
 
-  void waitForWindowVisible() {
+  void waitForWindowVisible() const {
     int width = 0, height = 0;
     glfwGetWindowSize(m_window, &width, &height);
     // loop if the window is minimized
@@ -68,12 +68,10 @@ class TestApp {
   std::unique_ptr<vkcore::Renderer> m_renderer;
   vkcore::UnlitRenderPass* m_renderPass;
 
-  // std::shared_ptr<vkcore::Mesh> m_mesh;
   std::unique_ptr<vkcore::Texture> m_texture;
   bool m_windowResized{false};
 
-  static void frameBufferSizeCallback(GLFWwindow* window,
-                                      int width,
+  static void frameBufferSizeCallback(GLFWwindow* window, int width,
                                       int height) {
     void* userPtr = glfwGetWindowUserPointer(window);
     TestApp* app = reinterpret_cast<TestApp*>(userPtr);
@@ -96,10 +94,7 @@ class TestApp {
               .texCoord{0, 0}}},
         .indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4}};
 
-    m_renderPass->addMesh(
-        std::make_shared<vkcore::Mesh>(m_renderer->getContext(), meshData));
-
-    static constexpr char TEXTURE_PATH[]{"resources/viking_room.png"};
+    static constexpr char TEXTURE_PATH[]{"resources/texture.jpg"};
     int texWidth, texHeight, texChannels;
     std::unique_ptr<stbi_uc, decltype(&stbi_image_free)> pixels(
         stbi_load(TEXTURE_PATH, &texWidth, &texHeight, &texChannels,
@@ -110,9 +105,11 @@ class TestApp {
       throw std::runtime_error("failed to load texture image!");
     }
 
-    m_texture = std::make_unique<vkcore::Texture>(
-        m_renderer->getContext(), texWidth, texHeight,
-        std::span(pixels.get(), texWidth * texHeight * 4), vkcore::PixelFormat::RGBA);
+    m_renderPass->addObject(
+        vkcore::Mesh(m_renderer->getContext(), meshData),
+        vkcore::Texture(m_renderer->getContext(), texWidth, texHeight,
+                std::span(pixels.get(), texWidth * texHeight * 4),
+                vkcore::PixelFormat::RGBA));
   }
 
   void updateCamera() {

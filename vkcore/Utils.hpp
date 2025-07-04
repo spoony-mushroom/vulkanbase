@@ -16,9 +16,9 @@ inline constexpr bool hasFlags(std::integral auto value,
   return (value & flagsToCheck) == flagsToCheck;
 }
 
-template <std::integral T, Enum E>
-inline constexpr bool hasFlags(T value, E flagsToCheck) {
-  auto flagsValue = static_cast<std::underlying_type_t<E>>(flagsToCheck);
+template <std::integral T, Enum... Es>
+inline constexpr bool hasFlags(T value, Es... flagsToCheck) {
+  auto flagsValue = (static_cast<std::underlying_type_t<Es>>(flagsToCheck) | ...);
   return (value & flagsValue) == flagsValue;
 }
 

@@ -24,7 +24,7 @@ set(ENGINE_SOURCES
 
 add_executable(VulkanTesting main.cpp testApp.cpp ${ENGINE_SOURCES})
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_package(glfw3 REQUIRED)
 
 target_link_libraries(VulkanTesting glfw Vulkan::Vulkan)
@@ -38,10 +38,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_options(VulkanTesting PRIVATE "-fsanitize=address")
     message(STATUS "Enabling Address Sanitizer")
 endif()
-
-
-# Shader compilation target
-find_program(GLSLC glslc REQUIRED)
 
 set(SHADER_SRC_DIR ${CMAKE_SOURCE_DIR}/shaders)
 set(SHADER_BIN_DIR ${CMAKE_BINARY_DIR}/shaders)
@@ -67,7 +63,7 @@ foreach(SHADER ${SHADERS})
     # Add command to compile GLSL to SPIR-V
     add_custom_command(
         OUTPUT ${SPIRV_FILE}
-        COMMAND ${GLSLC} ${SHADER} -o ${SPIRV_FILE}
+        COMMAND Vulkan::glslc ${SHADER} -o ${SPIRV_FILE}
         DEPENDS ${SHADER}
         COMMENT "Compiling GLSL shader: ${SHADER}"
         VERBATIM

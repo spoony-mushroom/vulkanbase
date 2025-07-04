@@ -29,9 +29,31 @@ void Pipeline::bind(VkCommandBuffer cmdBuf) const {
 }
 
 void Pipeline::bindUniforms(VkCommandBuffer cmdBuf, size_t imageIndex) const {
+  bindDescriptorSet(cmdBuf, m_descriptorSets[imageIndex]);
+}
+void Pipeline::bindDescriptorSet(VkCommandBuffer cmdBuf,
+                                 VkDescriptorSet descriptorSet) const {
   vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex],
-                          0, nullptr);
+                          m_pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+}
+
+std::vector<VkDescriptorSet> Pipeline::createDescriptorSets(
+    const int numSets) const {
+  std::vector layouts(numSets, m_descriptorSetLayout);
+  std::vector<VkDescriptorSet> descriptorSets;
+  descriptorSets.reserve(numSets);
+
+  const VkDescriptorSetAllocateInfo allocInfo{
+    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+    .descriptorPool = m_descriptorPool,
+    .descriptorSetCount = static_cast<uint32_t>(layouts.size()),
+    .pSetLayouts = layouts.data()};
+
+  VK_CHECK(vkAllocateDescriptorSets(m_context.device(), &allocInfo,
+                                    descriptorSets.data()),
+           "allocate descriptor sets");
+
+  return descriptorSets;
 }
 
 void Pipeline::initialize(
@@ -182,31 +204,16 @@ void Pipeline::createDescriptorPool() {
            "create descriptor pool");
 }
 
-void Pipeline::createDescriptorSets() {
-  std::vector<VkDescriptorSetLayout> layouts(k_maxFramesInFlight,
-                                             m_descriptorSetLayout);
-
-  VkDescriptorSetAllocateInfo allocInfo{
-      .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-      .descriptorPool = m_descriptorPool,
-      .descriptorSetCount = static_cast<uint32_t>(layouts.size()),
-      .pSetLayouts = layouts.data()};
-
-  m_descriptorSets.resize(k_maxFramesInFlight);
-  VK_CHECK(vkAllocateDescriptorSets(m_context.device(), &allocInfo,
-                                    m_descriptorSets.data()),
-           "allocate descriptor sets");
+void Pipeline::updateDescriptorSets() {
+  m_descriptorSets = createDescriptorSets(k_maxFramesInFlight);
 
   std::vector<VkDescriptorBufferInfo> bufferInfos;
   bufferInfos.reserve(k_maxFramesInFlight * m_uniformBuffers.size());
   std::vector<VkWriteDescriptorSet> descriptorWrites;
-  VkBuffer b1;
   for (int i = 0; i < k_maxFramesInFlight; i++) {
     for (const auto& [binding, buffer] : m_uniformBuffers[i]) {
       const auto& bufferInfo =
           bufferInfos.emplace_back(buffer, 0, buffer.getSize());
-        
-      b1 = bufferInfo.buffer;
 
       descriptorWrites.push_back(
           {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -220,7 +227,7 @@ void Pipeline::createDescriptorSets() {
   }
 
   vkUpdateDescriptorSets(m_context.device(), descriptorWrites.size(),
-                          descriptorWrites.data(), 0, nullptr);
+                         descriptorWrites.data(), 0, nullptr);
 
   // TODO: texture sampler uniforms!!
 }
@@ -285,7 +292,7 @@ std::unique_ptr<Pipeline> PipelineBuilder::create() const {
     pipeline->createUniformBuffer(binding, size);
   }
 
-  pipeline->createDescriptorSets();
+  pipeline->updateDescriptorSets();
 
   return pipeline;
 }

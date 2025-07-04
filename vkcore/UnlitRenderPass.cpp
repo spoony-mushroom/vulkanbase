@@ -9,6 +9,12 @@ using namespace spoony::utils;
 static constexpr char VERT_SHADER_SPV[]{"shaders/triangle_app_vert.spv"};
 static constexpr char FRAG_SHADER_SPV[]{"shaders/triangle_app_frag.spv"};
 
+struct Drawable {
+  Mesh mesh;
+  std::vector<VkDescriptorSet> descriptorSets;
+  Texture texture;
+};
+
 UnlitRenderPass::UnlitRenderPass(ContextHandle context,
                                  const RenderPassConfig& renderPassConfig,
                                  int maxFramesInFlight)
@@ -28,8 +34,8 @@ void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
                                               m_activeFramebuffer->getExtent());
   m_pipeline->bind(cmdBuf);
   m_pipeline->bindUniforms(cmdBuf, imageIndex);
-  for (auto mesh : m_meshes) {
-    mesh->draw(cmdBuf);
+  for (const auto& [mesh, texture] : m_objects) {
+    mesh.draw(cmdBuf);
   }
 }
 
@@ -46,8 +52,8 @@ void UnlitRenderPass::setModelViewProjection(glm::mat4 model,
   m_pipeline->updateUniform(0, ubo);
 }
 
-void UnlitRenderPass::addMesh(std::shared_ptr<Mesh> mesh) {
-  m_meshes.insert(mesh);
+void UnlitRenderPass::addObject(Mesh&& mesh, Texture&& texture) {
+  m_objects.emplace_back(std::move(mesh), std::move(texture));
 }
 
 void UnlitRenderPass::initPipeline() {

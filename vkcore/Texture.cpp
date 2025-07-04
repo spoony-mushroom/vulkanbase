@@ -73,13 +73,9 @@ Texture::Texture(ContextHandle context, const TextureConfig& config)
       "create image view");
 }
 
-Texture::Texture(ContextHandle context,
-                 uint32_t width,
-                 uint32_t height,
-                 std::span<uint8_t> data,
-                 PixelFormat dataPixelFormat,
-                 bool generateMipMaps,
-                 VkFormat textureFormat)
+Texture::Texture(ContextHandle context, uint32_t width, uint32_t height,
+                 std::span<uint8_t> data, PixelFormat dataPixelFormat,
+                 bool generateMipMaps, VkFormat textureFormat)
     : Texture(
           context,
           {.width = width,
@@ -112,8 +108,47 @@ Texture::Texture(ContextHandle context,
     generateMipmaps();
   }
 }
+Texture::Texture(Texture&& other) noexcept {
+  m_image = other.m_image;
+  m_imageView = other.m_imageView;
+  m_memory = other.m_memory;
 
+  m_context = std::move(other.m_context);
+  m_width = other.m_width;
+  m_height = other.m_height;
+  m_format = other.m_format;
+
+  other.m_image = VK_NULL_HANDLE;
+  other.m_imageView = VK_NULL_HANDLE;
+  other.m_memory = VK_NULL_HANDLE;
+  other.m_width = 0;
+  other.m_height = 0;
+  other.m_format = VK_FORMAT_UNDEFINED;
+}
+
+Texture& Texture::operator=(Texture&& other) noexcept {
+  m_image = other.m_image;
+  m_imageView = other.m_imageView;
+  m_memory = other.m_memory;
+
+  m_context = std::move(other.m_context);
+  m_width = other.m_width;
+  m_height = other.m_height;
+  m_format = other.m_format;
+
+  other.m_image = VK_NULL_HANDLE;
+  other.m_imageView = VK_NULL_HANDLE;
+  other.m_memory = VK_NULL_HANDLE;
+  other.m_width = 0;
+  other.m_height = 0;
+  other.m_format = VK_FORMAT_UNDEFINED;
+
+  return *this;
+}
 Texture::~Texture() {
+  if (m_image == VK_NULL_HANDLE) {
+    return;
+  }
   vkDestroyImageView(m_context.device(), m_imageView, nullptr);
   vkDestroyImage(m_context.device(), m_image, nullptr);
   vkFreeMemory(m_context.device(), m_memory, nullptr);

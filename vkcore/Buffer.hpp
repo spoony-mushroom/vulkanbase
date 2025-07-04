@@ -8,7 +8,8 @@ using namespace spoony::utils;
 
 namespace spoony::vkcore {
 
-inline VkBufferUsageFlags getExtraUsageFlags(VkMemoryPropertyFlags propertyFlags) {
+inline VkBufferUsageFlags getExtraUsageFlags(
+    VkMemoryPropertyFlags propertyFlags) {
   if (hasFlags(propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
     return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   }
@@ -42,20 +43,23 @@ class Buffer {
       stagingBuffer.copyHostData(srcData);
       // Perform a transfer
       copyFrom(stagingBuffer);
-    } else {
+    } else if (hasFlags(properties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
       copyHostData(srcData);
+    } else {
+      throw std::runtime_error("Failed to create buffer: Invalid memory property flags");
     }
   }
   Buffer(Buffer&& other);
   virtual ~Buffer();
 
-  void bindVertex(VkCommandBuffer cmdBuf);
-  void bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType);
+  void bindVertex(VkCommandBuffer cmdBuf) const;
+  void bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType) const;
   VkDeviceSize getSize() const { return m_size; };
   void copyFrom(const Buffer& src);
 
   operator VkBuffer() const { return m_buffer; }
-  Buffer& operator=(Buffer&& other);
+  Buffer& operator=(Buffer&& other) noexcept;
 
  protected:
   VkDevice getDevice() const { return m_context.device(); };
@@ -73,9 +77,9 @@ class Buffer {
 
  private:
   ContextHandle m_context;
-  VkDeviceSize m_size;
-  VkBuffer m_buffer;
-  VkDeviceMemory m_bufferMemory;
+  VkDeviceSize m_size{};
+  VkBuffer m_buffer{};
+  VkDeviceMemory m_bufferMemory{};
 };
 
 class MappedUniformBuffer : public Buffer {

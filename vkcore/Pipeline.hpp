@@ -18,6 +18,10 @@ class Pipeline {
   ~Pipeline();
   void bind(VkCommandBuffer cmdBuf) const;
   void bindUniforms(VkCommandBuffer cmdBuf, size_t imageIndex) const;
+  void bindDescriptorSet(VkCommandBuffer cmdBuf,
+                         VkDescriptorSet descriptorSet) const;
+
+  std::vector<VkDescriptorSet> createDescriptorSets(int numSets) const;
 
   template <typename T>
   void updateUniform(uint32_t bindingIdx, const T& data) {
@@ -37,11 +41,12 @@ class Pipeline {
   std::vector<VkDescriptorSet> m_descriptorSets;
   std::vector<std::map<uint32_t, MappedUniformBuffer>> m_uniformBuffers;
 
+
   void createDescriptorSetLayout(
       std::span<const VkDescriptorSetLayoutBinding> bindings);
   void createUniformBuffer(uint32_t binding, size_t size);
   void createDescriptorPool();
-  void createDescriptorSets();
+  void updateDescriptorSets();
   void initialize(
       const RenderPass& renderPass,
       VkVertexInputBindingDescription vertexBindingDescription,

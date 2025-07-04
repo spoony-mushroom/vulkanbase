@@ -65,7 +65,7 @@ Buffer::Buffer(Buffer&& other) {
   other.m_size = 0;
 }
 
-Buffer& Buffer::operator=(Buffer&& other) {
+Buffer& Buffer::operator=(Buffer&& other)  noexcept {
   reset();
   m_buffer = other.m_buffer;
   m_bufferMemory = other.m_bufferMemory;
@@ -78,12 +78,12 @@ Buffer& Buffer::operator=(Buffer&& other) {
   return *this;
 }
 
-void Buffer::bindVertex(VkCommandBuffer cmdBuf) {
+void Buffer::bindVertex(VkCommandBuffer cmdBuf) const {
   VkDeviceSize offset{0};
   vkCmdBindVertexBuffers(cmdBuf, 0, 1, &m_buffer, &offset);
 }
 
-void Buffer::bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType) {
+void Buffer::bindIndex(VkCommandBuffer cmdBuf, VkIndexType indexType) const {
   vkCmdBindIndexBuffer(cmdBuf, m_buffer, 0, indexType);
 }
 

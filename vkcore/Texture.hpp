@@ -28,6 +28,10 @@ class Texture {
           PixelFormat dataPixelFormat,
           bool generateMipMaps = true,
           VkFormat textureFormat = VK_FORMAT_R8G8B8A8_UNORM);
+  Texture(const Texture& other) = delete;
+  Texture(Texture&& other) noexcept;
+  Texture& operator=(const Texture& other) = delete;
+  Texture& operator=(Texture&& other) noexcept;
   ~Texture();
 
   void copyFrom(const Buffer& buffer);

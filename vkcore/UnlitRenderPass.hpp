@@ -1,5 +1,6 @@
 #pragma once
 #include <set>
+
 #include "Framebuffer.hpp"
 #include "Mesh.hpp"
 #include "Pipeline.hpp"
@@ -19,7 +20,7 @@ class UnlitRenderPass : public RenderPassModule {
                             VkExtent2D extent) override;
 
   void setModelViewProjection(glm::mat4 model, glm::mat4 view, glm::mat4 proj);
-  void addMesh(std::shared_ptr<Mesh> mesh);
+  void addObject(Mesh&& mesh, Texture&& texture);
 
  private:
   const int k_maxFramesInFlight;
@@ -29,7 +30,9 @@ class UnlitRenderPass : public RenderPassModule {
   std::vector<Framebuffer> m_framebuffers;
   std::unique_ptr<Texture> m_colorRenderTexture;
   std::unique_ptr<Texture> m_depthRenderTexture;
-  std::set<std::shared_ptr<Mesh>> m_meshes;
+  std::vector<std::tuple<Mesh, Texture>> m_objects;
+  // std::set<std::shared_ptr<Mesh>> m_meshes;
+  // std::vector<std::shared_ptr<Texture>> m_textures;
 
   Framebuffer* m_activeFramebuffer;
 
