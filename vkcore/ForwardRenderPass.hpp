@@ -9,9 +9,9 @@
 #include "Texture.hpp"
 
 namespace spoony::vkcore {
-class UnlitRenderPass : public RenderPassModule {
+class ForwardRenderPass : public RenderPassModule {
  public:
-  UnlitRenderPass(ContextHandle context,
+  ForwardRenderPass(ContextHandle context,
                   const RenderPassConfig& renderPassConfig,
                   int maxFramesInFlight);
   void selectOutput(int framebufferIndex) override;
@@ -31,8 +31,6 @@ class UnlitRenderPass : public RenderPassModule {
   std::unique_ptr<Texture> m_colorRenderTexture;
   std::unique_ptr<Texture> m_depthRenderTexture;
   std::vector<std::tuple<Mesh, Texture>> m_objects;
-  // std::set<std::shared_ptr<Mesh>> m_meshes;
-  // std::vector<std::shared_ptr<Texture>> m_textures;
 
   Framebuffer* m_activeFramebuffer;
 

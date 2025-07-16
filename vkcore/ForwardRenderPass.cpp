@@ -1,5 +1,4 @@
-#include "UnlitRenderPass.hpp"
-
+#include "ForwardRenderPass.hpp"
 #include "Texture.hpp"
 #include "Utils.hpp"
 
@@ -15,7 +14,7 @@ struct Drawable {
   Texture texture;
 };
 
-UnlitRenderPass::UnlitRenderPass(ContextHandle context,
+ForwardRenderPass::ForwardRenderPass(ContextHandle context,
                                  const RenderPassConfig& renderPassConfig,
                                  int maxFramesInFlight)
     : m_context(context),
@@ -24,11 +23,11 @@ UnlitRenderPass::UnlitRenderPass(ContextHandle context,
   initPipeline();
 }
 
-void UnlitRenderPass::selectOutput(int framebufferIndex) {
+void ForwardRenderPass::selectOutput(int framebufferIndex) {
   m_activeFramebuffer = &m_framebuffers[framebufferIndex];
 }
 
-void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
+void ForwardRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
   assert(m_activeFramebuffer != nullptr);
   auto renderScope = m_renderPass.createScope(cmdBuf, *m_activeFramebuffer,
                                               m_activeFramebuffer->getExtent());
@@ -39,24 +38,24 @@ void UnlitRenderPass::record(VkCommandBuffer cmdBuf, uint32_t imageIndex) {
   }
 }
 
-void UnlitRenderPass::setOutputAttachments(
+void ForwardRenderPass::setOutputAttachments(
     std::span<const VkImageView> outputAttachments,
     VkExtent2D extent) {
   initFramebuffers(outputAttachments, extent);
 }
 
-void UnlitRenderPass::setModelViewProjection(glm::mat4 model,
+void ForwardRenderPass::setModelViewProjection(glm::mat4 model,
                                              glm::mat4 view,
                                              glm::mat4 proj) {
   UniformBufferObject ubo{model, view, proj};
   m_pipeline->updateUniform(0, ubo);
 }
 
-void UnlitRenderPass::addObject(Mesh&& mesh, Texture&& texture) {
+void ForwardRenderPass::addObject(Mesh&& mesh, Texture&& texture) {
   m_objects.emplace_back(std::move(mesh), std::move(texture));
 }
 
-void UnlitRenderPass::initPipeline() {
+void ForwardRenderPass::initPipeline() {
   PipelineBuilder pipelineBuilder(m_context, m_renderPass);
   m_pipeline =
       pipelineBuilder.setMaxFramesInFlight(k_maxFramesInFlight)
@@ -67,7 +66,7 @@ void UnlitRenderPass::initPipeline() {
           .create();
 }
 
-void UnlitRenderPass::initFramebuffers(
+void ForwardRenderPass::initFramebuffers(
     std::span<const VkImageView> outputAttachments,
     VkExtent2D extent) {
   TextureConfig textureConfig{

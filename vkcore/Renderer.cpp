@@ -8,7 +8,7 @@
 #include "VulkanUtils.hpp"
 
 // Render pass implementations
-#include "UnlitRenderPass.hpp"
+#include "ForwardRenderPass.hpp"
 
 namespace spoony::vkcore {
 using namespace spoony::utils;
@@ -151,7 +151,7 @@ VkExtent2D Renderer::getExtent() const {
 }
 
 template <>
-UnlitRenderPass& Renderer::addRenderPassModule<UnlitRenderPass>() {
+ForwardRenderPass& Renderer::addRenderPassModule<ForwardRenderPass>() {
   RenderPassConfig config{
       .colorImageFormat = m_swapChain->getFormat(),
       .depthStencilImageFormat =
@@ -159,10 +159,10 @@ UnlitRenderPass& Renderer::addRenderPassModule<UnlitRenderPass>() {
       .msaaSamples =
           utils::getMaxUsableSampleCount(m_context.physicalDevice())};
   m_renderModules.push_back(
-      std::make_unique<UnlitRenderPass>(m_context, config, 2));
+      std::make_unique<ForwardRenderPass>(m_context, config, 2));
 
-  UnlitRenderPass* renderPass =
-      static_cast<UnlitRenderPass*>(m_renderModules.back().get());
+  ForwardRenderPass* renderPass =
+      static_cast<ForwardRenderPass*>(m_renderModules.back().get());
 
   renderPass->setOutputAttachments(m_swapChain->getImageViews(),
                                    m_swapChain->getExtent());

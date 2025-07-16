@@ -7,11 +7,11 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include "vkcore/ForwardRenderPass.hpp"
 #include "vkcore/Mesh.hpp"
 #include "vkcore/Renderer.hpp"
 #include "vkcore/Texture.hpp"
 #include "vkcore/Types.hpp"
-#include "vkcore/UnlitRenderPass.hpp"
 using namespace spoony;
 
 class TestApp {
@@ -31,7 +31,7 @@ class TestApp {
 
   void initGraphics() {
     m_renderer = std::make_unique<vkcore::Renderer>(m_window);
-    m_renderPass = &m_renderer->addRenderPassModule<vkcore::UnlitRenderPass>();
+    m_renderPass = &m_renderer->addRenderPassModule<vkcore::ForwardRenderPass>();
     initMeshes();
   }
 
@@ -66,7 +66,7 @@ class TestApp {
 
   GLFWwindow* m_window;
   std::unique_ptr<vkcore::Renderer> m_renderer;
-  vkcore::UnlitRenderPass* m_renderPass;
+  vkcore::ForwardRenderPass* m_renderPass;
 
   std::unique_ptr<vkcore::Texture> m_texture;
   bool m_windowResized{false};

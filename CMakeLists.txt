@@ -17,7 +17,7 @@ set(ENGINE_SOURCES
     vkcore/Swapchain.cpp
     vkcore/Synchronization.cpp
     vkcore/Texture.cpp
-    vkcore/UnlitRenderPass.cpp
+        vkcore/ForwardRenderPass.cpp
     vkcore/VulkanContext.cpp 
     vkcore/VulkanUtils.cpp
     vkcore/WindowSurface.cpp)
